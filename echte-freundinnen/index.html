@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Echte Freundinnen</title>
+<style>
+/* Layout: one-screen classroom app for iPad landscape. Top: week strip, whose turn, Lena's heart barometer.
+   Middle: the drawn scene. Bottom: big picture cards or arrows. No text the children must read. */
+:root{
+  --paper:#fdf3cf;
+  --paper-deep:#f2dd96;
+  --ink:#2c2a1e;
+  --ink-soft:#6b6448;
+  --leaf:#4f9a3a;
+  --leaf-deep:#376c28;
+  --heart:#d9384a;
+  --lena:#e8a43a;
+  --mia:#3a7fc4;
+  --card:#fffaf0;
+  --good:#3f9b4a;
+  --bad:#d14b3c;
+  --font-ui: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-ui);margin:0;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding-inline:16px;padding-block:8px;box-sizing:border-box;max-width:1400px;margin:0 auto}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible{outline:4px solid var(--mia);outline-offset:3px}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:14px;min-height:62px;flex-wrap:wrap}
+.week{display:flex;gap:5px}
+.week span{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:.95rem;background:var(--card);color:var(--ink-soft);border:3px solid transparent;position:relative}
+.week span.now{border-color:var(--leaf);color:var(--ink);transform:scale(1.12)}
+.week span.done{background:var(--paper-deep)}
+.turn{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:800;margin-left:auto}
+.turn svg{width:54px;height:54px;border-radius:50%;border:4px solid var(--ink);background:#fff}
+.turn[hidden]{display:none}
+.turn.lena svg{border-color:var(--lena)} .turn.mia svg{border-color:var(--mia)}
+.turn.pulse svg{animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.14)}}
+.meter{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:6px 10px}
+.meter svg.face{width:40px;height:40px}
+.bar{display:flex;gap:3px}
+.bar i{width:13px;height:30px;border-radius:4px;background:#e6dcc0;transition:background .5s, transform .5s}
+.bar i.on{transform:scaleY(1.05)}
+.delta{font-size:1.6rem;min-width:1.6em;text-align:center}
+.pill{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;padding:4px 12px;font-weight:900;font-size:1.15rem;font-variant-numeric:tabular-nums;min-height:46px;box-sizing:border-box}
+.pill svg{width:36px;height:36px;transition:opacity .5s}
+.pill.online{color:var(--heart)}
+.pill .ar{font-size:1.2rem}
+.fr{position:relative;display:inline-flex}
+.fr.lost svg{animation:shake .5s 3}
+.fr b{position:absolute;left:50%;top:-6px;font-size:1.5rem;transform:translateX(-50%);animation:drop 1.6s ease-out forwards;pointer-events:none}
+@keyframes drop{0%{opacity:0;transform:translate(-50%,-14px) scale(.6)}25%{opacity:1;transform:translate(-50%,0) scale(1.25)}100%{opacity:1;transform:translate(-50%,8px) scale(1)}}
+.sortbox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+.htitle{font-size:2rem;font-weight:900;background:#fff6c8;border:3px solid var(--ink);border-radius:14px;padding:4px 18px}
+.turn.ayla svg{border-color:#8e5bd6}
+
+/* stage */
+.stage{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+.stage > svg.scene{max-width:100%;max-height:100%;width:auto;height:100%;aspect-ratio:8/5;border-radius:14px;box-shadow:0 4px 18px rgba(60,50,10,.18);background:#fff}
+.daycard{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--card);border-radius:24px;padding:28px 60px;box-shadow:0 6px 0 var(--paper-deep)}
+.daycard .d{font-size:clamp(4rem,14vw,8rem);font-weight:900;color:var(--leaf);line-height:1}
+.daycard .sun{font-size:3rem}
+.daycard .full{font-size:1.1rem;color:var(--ink-soft)}
+
+/* bottom */
+.bottom{display:flex;align-items:center;justify-content:center;gap:14px;min-height:86px}
+.nav{display:flex;justify-content:space-between;width:100%;align-items:center;gap:12px}
+.arrow{width:88px;height:74px;border-radius:20px;background:var(--leaf);color:#fff;font-size:2.3rem;font-weight:900;box-shadow:0 4px 0 var(--leaf-deep);flex:none}
+.arrow.back{background:var(--paper-deep);color:var(--ink);box-shadow:0 4px 0 #d6c27e}
+.arrow:active{transform:translateY(3px);box-shadow:none}
+.arrow[disabled]{visibility:hidden}
+.restart{font-size:1.8rem;opacity:.5;padding:8px}
+.cards{display:flex;gap:14px;justify-content:center;flex:1;min-width:0}
+.card{flex:1 1 0;max-width:230px;min-width:0;background:var(--card);border:4px solid var(--paper-deep);border-radius:20px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 5px 0 var(--paper-deep)}
+.card:active{transform:translateY(4px);box-shadow:none}
+.card .ic{font-size:2.6rem;line-height:1.15;letter-spacing:2px;white-space:nowrap}
+.card .w{font-size:1.1rem;font-weight:800}
+.feel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.feel button{font-size:2.4rem;width:68px;height:68px;border-radius:18px;background:var(--card);border:4px solid transparent}
+.feel button[aria-pressed="true"]{border-color:var(--leaf);transform:scale(1.1)}
+.found{font-size:2rem;letter-spacing:6px}
+
+/* sort activity */
+.sortlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:min(100%,760px);align-content:center}
+.cmt{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:10px 12px;border:4px solid transparent;transition:border-color .3s}
+.cmt .av{font-size:2.2rem;width:52px;height:52px;display:grid;place-items:center;border-radius:50%;background:#f3ead0;flex:none;overflow:hidden}
+.cmt .av svg{width:52px;height:52px}
+.cmt .tx{font-size:2rem;font-weight:800;flex:1;min-width:0}
+.cmt .bt{display:flex;gap:6px}
+.cmt .bt button{font-size:1.9rem;width:56px;height:56px;border-radius:14px;background:#f3ead0}
+.cmt.ok{border-color:var(--good)}
+.cmt.no{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* week review */
+.review{background:var(--card);border-radius:20px;padding:16px 20px;width:min(100%,900px);display:grid;grid-template-columns:auto repeat(7,minmax(0,1fr));gap:8px 10px;align-items:end}
+.review .lab{font-size:2rem;align-self:center}
+.review .dn{text-align:center;font-weight:800;color:var(--ink-soft)}
+.review .fc svg{width:100%;max-width:70px;display:block;margin:0 auto}
+.review .lk{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:118px;gap:4px}
+.review .lk b{display:block;width:60%;background:var(--heart);border-radius:6px 6px 0 0;opacity:.85}
+.review .lk small{font-weight:800;color:var(--heart);font-variant-numeric:tabular-nums}
+
+.startbox{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.startbox h1{font-size:clamp(2.2rem,6vw,4rem);color:var(--leaf);margin:0;text-wrap:balance}
+.startbox .pair{font-size:3rem;line-height:1}
+.startbox svg{width:min(80vw,420px);height:auto}
+.small{font-size:.95rem;color:var(--ink-soft);max-width:52ch;margin:0}
+
+@media (max-width:700px){
+  .week span{width:30px;height:30px;font-size:.75rem}
+  .bar i{width:8px;height:22px}
+  .card .ic{font-size:1.8rem} .card .w{font-size:.85rem}
+  .arrow{width:62px;height:58px;font-size:1.8rem}
+  .sortlist{grid-template-columns:1fr}
+  .feel button{width:48px;height:48px;font-size:1.7rem}
+  .review{grid-template-columns:auto repeat(7,minmax(0,1fr));padding:10px;gap:6px}
+  .review .lk{height:70px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top">
+    <div class="week" id="week"></div>
+    <div class="turn" id="turn" hidden></div>
+    <div class="meter" id="meter" title="So geht es Lena"></div>
+    <div class="pill" id="real" title="Echte Freundinnen"></div>
+    <div class="pill online" id="online" title="Online-Freunde und Likes"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="bottom" id="bottom"></div>
+</div>
+
+<script>
+/* ---------- drawing kit ---------- */
+let U=0; const uid=()=>'u'+(++U);
+const SKIN={lena:'#f7d2b6',mia:'#8a5636',bella:'#f3cba8',adult:'#e9b998',ayla:'#c68e64'};
+const HAIR={lena:'#e8c25a',mia:'#2b1a10',bella:'#8a5a33',adult:'#6b4a2e',ayla:'#1b1b1b'};
+const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+const DAYFULL=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const moodOf=h=>h>=8?'happy':h>=6?'smile':h>=4?'neutral':h>=2?'sad':'cry';
+const emo=(t,x,y,sz=40)=>`<text x="${x}" y="${y}" font-size="${sz}" text-anchor="middle" dominant-baseline="central">${t}</text>`;
+
+function face(who,mood,filter){
+  let g='';const dark=who==='mia'||who==='ayla';const hc=dark?'#1a0f08':'#7a5a2a';
+  // eyes
+  [-1,1].forEach(sd=>{const ex=22*sd, ey=-4;
+    if(mood==='sleep'){g+=`<path d="M${ex-9},${ey} Q${ex},${ey+7} ${ex+9},${ey}" stroke="#2b2118" stroke-width="3" fill="none" stroke-linecap="round"/>`;}
+    else if(filter){g+=`<ellipse cx="${ex}" cy="${ey}" rx="14" ry="16" fill="#fff" stroke="#333" stroke-width="1.5"/><circle cx="${ex}" cy="${ey+1}" r="10" fill="#5aa0e6"/><circle cx="${ex}" cy="${ey+1}" r="5" fill="#1d2b3a"/><circle cx="${ex+4}" cy="${ey-4}" r="3" fill="#fff"/>`;
+      [[-10,-14,-16,-22],[-3,-16,-5,-24],[5,-15,7,-23]].forEach(([a,b,c,d])=>{g+=`<line x1="${ex+a*sd}" y1="${ey+b}" x2="${ex+c*sd}" y2="${ey+d}" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>`;});}
+    else if(mood==='tired'){g+=`<path d="M${ex-8},${ey} L${ex+8},${ey}" stroke="#2b2118" stroke-width="3" stroke-linecap="round"/><path d="M${ex-7},${ey} Q${ex},${ey+7} ${ex+7},${ey}" fill="#2b2118"/>`;}
+    else {g+=`<ellipse cx="${ex}" cy="${ey}" rx="6.5" ry="7.5" fill="#2b2118"/><circle cx="${ex+2}" cy="${ey-3}" r="2" fill="#fff"/>`;}
+  });
+  // brows
+  const B={happy:['M-32,-24 Q-22,-31 -12,-24','M12,-24 Q22,-31 32,-24'],smile:['M-32,-23 Q-22,-28 -12,-23','M12,-23 Q22,-28 32,-23'],
+    neutral:['M-32,-23 L-12,-23','M12,-23 L32,-23'],sad:['M-33,-19 L-12,-28','M12,-28 L33,-19'],cry:['M-33,-18 L-12,-29','M12,-29 L33,-18'],
+    unsure:['M-32,-23 L-12,-23','M12,-29 Q22,-34 32,-27'],tired:['M-32,-21 L-12,-21','M12,-21 L32,-21'],sleep:['M-32,-21 L-12,-21','M12,-21 L32,-21'],
+    amazed:['M-32,-30 Q-22,-37 -12,-30','M12,-30 Q22,-37 32,-30'],cheeky:['M-32,-26 Q-22,-31 -12,-24','M12,-24 Q22,-31 32,-26']}[mood]||[];
+  if(!filter) B.forEach(d=>g+=`<path d="${d}" stroke="${hc}" stroke-width="4" fill="none" stroke-linecap="round"/>`);
+  else g+=`<path d="M-34,-30 Q-22,-38 -10,-31" stroke="#5a3a1a" stroke-width="3" fill="none"/><path d="M10,-31 Q22,-38 34,-30" stroke="#5a3a1a" stroke-width="3" fill="none"/>`;
+  // cheeks, freckles, pimple
+  if(filter) g+=`<ellipse cx="-36" cy="16" rx="14" ry="9" fill="#ff7aa8" opacity=".5"/><ellipse cx="36" cy="16" rx="14" ry="9" fill="#ff7aa8" opacity=".5"/>`;
+  else if(['happy','smile','cheeky'].includes(mood)) g+=`<circle cx="-36" cy="16" r="8" fill="#ff8f8f" opacity=".3"/><circle cx="36" cy="16" r="8" fill="#ff8f8f" opacity=".3"/>`;
+  if(who==='lena'&&!filter) [[-38,8],[-30,13],[-40,16],[-26,7],[38,8],[30,13],[40,16],[26,7]].forEach(([a,b])=>g+=`<circle cx="${a}" cy="${b}" r="2.2" fill="#c98b5e"/>`);
+  if(who==='bella'&&!filter) g+=`<circle cx="38" cy="22" r="4.5" fill="#d2504a"/><path d="M-32,6 Q-22,11 -12,6 M12,6 Q22,11 32,6" stroke="#b58a6a" stroke-width="2" fill="none" opacity=".7"/>`;
+  // nose
+  g+= filter?`<path d="M-2,14 Q0,17 2,14" stroke="#c0907a" stroke-width="2" fill="none"/>`:`<path d="M-5,12 Q0,20 5,12" stroke="${dark?'#5c351e':'#c0907a'}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  // mouth
+  if(filter) g+=`<path d="M-17,29 Q0,45 17,29 Q0,33 -17,29Z" fill="#e2457a"/><path d="M-8,33 Q0,35 8,33" stroke="#fff" stroke-width="2" opacity=".7"/>`;
+  else {const M={happy:`<path d="M-21,26 Q0,52 21,26Z" fill="#7a2b2b"/><path d="M-17,27 L17,27 L15,32 L-15,32Z" fill="#fff"/>`,
+    smile:`<path d="M-16,28 Q0,42 16,28" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    neutral:`<path d="M-12,33 L12,33" stroke="#7a2b2b" stroke-width="3.5" stroke-linecap="round"/>`,
+    sad:`<path d="M-14,37 Q0,26 14,37" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    cry:`<path d="M-15,39 Q0,25 15,39" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M-24,6 q-5,12 0,16 q5,-4 0,-16Z M24,6 q-5,12 0,16 q5,-4 0,-16Z" fill="#6ec6ff"/>`,
+    unsure:`<path d="M-14,33 Q-7,28 0,33 Q7,38 14,33" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    tired:`<path d="M-10,34 Q0,31 10,34" stroke="#7a2b2b" stroke-width="3" fill="none"/>`,
+    sleep:`<ellipse cx="0" cy="33" rx="5" ry="4" fill="#7a2b2b"/>`,
+    amazed:`<ellipse cx="0" cy="33" rx="8" ry="10" fill="#7a2b2b"/>`,
+    cheeky:`<path d="M-18,27 Q0,46 18,27Z" fill="#7a2b2b"/><path d="M-8,34 Q0,52 8,34Z" fill="#e8607a"/>`};
+    g+=M[mood]||M.smile;}
+  return g;
+}
+function hairBack(who){
+  if(who==='lena') return `<path d="M-66,0 Q-80,-86 0,-82 Q80,-86 66,0 L82,112 Q52,126 34,84 L-34,84 Q-52,126 -82,112Z" fill="${HAIR.lena}"/>`;
+  if(who==='bella') return `<path d="M-68,0 Q-82,-88 0,-84 Q82,-88 68,0 L86,150 Q52,162 36,90 L-36,90 Q-52,162 -86,150Z" fill="${HAIR.bella}"/>`;
+  if(who==='mia'){let g='';for(let a=160;a<=380;a+=18){const r=a*Math.PI/180;g+=`<circle cx="${Math.cos(r)*62}" cy="${Math.sin(r)*62-6}" r="22" fill="${HAIR.mia}"/>`;}
+    return g+`<circle cx="-78" cy="-44" r="30" fill="${HAIR.mia}"/><circle cx="78" cy="-44" r="30" fill="${HAIR.mia}"/>`;}
+  if(who==='ayla') return `<path d="M-70,0 Q-80,-86 0,-82 Q80,-86 70,0 L72,52 Q60,66 44,56 L-44,56 Q-60,66 -72,52Z" fill="${HAIR.ayla}"/>`;
+  if(who==='adult') return `<circle cx="0" cy="-74" r="26" fill="${HAIR.adult}"/><path d="M-62,10 Q-72,-76 0,-72 Q72,-76 62,10 L60,40 L-60,40Z" fill="${HAIR.adult}"/>`;
+  return '';
+}
+function hairFront(who){
+  if(who==='lena') return `<path d="M-60,-12 Q-62,-72 0,-64 Q58,-72 60,-12 Q44,-46 14,-42 Q-16,-52 -60,-12Z" fill="${HAIR.lena}"/><path d="M-30,-58 Q-10,-50 0,-40 M10,-58 Q25,-50 32,-38" stroke="#c9a03e" stroke-width="3" fill="none"/>`;
+  if(who==='bella') return `<path d="M-60,-6 Q-64,-74 0,-66 Q64,-74 62,-6 Q50,-50 -6,-50 Q-30,-40 -60,-6Z" fill="${HAIR.bella}"/>`;
+  if(who==='mia'){let g='';for(let x=-46;x<=46;x+=18)g+=`<circle cx="${x}" cy="${-56+Math.abs(x)*0.25}" r="15" fill="${HAIR.mia}"/>`;return g;}
+  if(who==='ayla') return `<path d="M-60,-24 Q-62,-78 0,-72 Q62,-78 60,-24Z" fill="${HAIR.ayla}"/><path d="M-56,-46 Q0,-80 56,-46" stroke="#ff6fa8" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  if(who==='adult') return `<path d="M-58,-14 Q-56,-70 0,-64 Q56,-70 58,-14 Q30,-48 0,-46 Q-30,-48 -58,-14Z" fill="${HAIR.adult}"/>`;
+  return '';
+}
+function body(who){
+  const P='M-100,280 L-100,150 Q-98,88 -38,80 L38,80 Q98,88 100,150 L100,280Z';
+  if(who==='lena'){const id=uid();const C=['#e63946','#f4a261','#e9c46a','#2a9d8f','#457b9d','#9b5de5'];let s='';for(let i=0;i<12;i++)s+=`<rect x="-110" y="${80+i*17}" width="220" height="17" fill="${C[i%6]}"/>`;
+    return `<clipPath id="${id}"><path d="${P}"/></clipPath><g clip-path="url(#${id})">${s}</g>`;}
+  if(who==='mia') return `<path d="${P}" fill="#fbfbf7"/><path d="M-50,140 L50,140 L56,280 L-56,280Z" fill="#4a78b5"/><path d="M-50,140 L-60,86 M50,140 L60,86" stroke="#4a78b5" stroke-width="13"/><circle cx="-40" cy="150" r="5" fill="#e0c060"/><circle cx="40" cy="150" r="5" fill="#e0c060"/><rect x="-20" y="170" width="40" height="30" rx="4" fill="#3c669d"/>`;
+  if(who==='ayla') return `<path d="${P}" fill="#8e5bd6"/><path d="M0,128 l9,18 20,3 -15,14 4,20 -18,-10 -18,10 4,-20 -15,-14 20,-3Z" fill="#ffd34d"/>`;
+  if(who==='bella') return `<path d="${P}" fill="#ef8fb6"/><path d="M-30,80 Q0,110 30,80" fill="none" stroke="#d76e98" stroke-width="4"/>`;
+  return `<path d="${P}" fill="#5e9d74"/><path d="M-26,80 L0,110 L26,80" fill="#fff"/>`;
+}
+function hold(kind,sk){
+  if(kind==='ice') return `<path d="M44,120 L80,120 L62,178Z" fill="#d9a05b" stroke="#b07d3e" stroke-width="2"/><circle cx="62" cy="108" r="20" fill="#f6a5c0"/><circle cx="50" cy="176" r="15" fill="${sk}"/>`;
+  if(kind==='phone') return `<g transform="rotate(-8 50 150)"><rect x="22" y="100" width="56" height="96" rx="9" fill="#1d1d24"/><rect x="27" y="108" width="46" height="80" rx="4" fill="#9fd3ff"/></g><circle cx="30" cy="180" r="14" fill="${sk}"/><circle cx="78" cy="176" r="14" fill="${sk}"/>`;
+  return '';
+}
+/* a child (or adult). (x,y) = centre of the head */
+function kid(o){
+  const {x=0,y=0,s=1,who='lena',mood='smile',filter=false,flip=false,hold:h=null,ears=true}=o;
+  const sk=SKIN[who];
+  return `<g transform="translate(${x} ${y}) scale(${flip?-s:s} ${s})">${hairBack(who)}<rect x="-17" y="40" width="34" height="48" rx="10" fill="${sk}"/>${body(who)}${ears?`<circle cx="-57" cy="6" r="11" fill="${sk}"/><circle cx="57" cy="6" r="11" fill="${sk}"/>`:''}<circle cx="0" cy="0" r="58" fill="${sk}"/>${face(who,mood,filter)}${hairFront(who)}${filter?`<path d="M70,-70 l4,10 l10,4 l-10,4 l-4,10 l-4,-10 l-10,-4 l10,-4Z" fill="#ffd34d"/><path d="M-78,-30 l3,7 l7,3 l-7,3 l-3,7 l-3,-7 l-7,-3 l7,-3Z" fill="#ffd34d"/>`:''}${hold(h,sk)}</g>`;
+}
+/* head-and-shoulders portrait that fills a box */
+function portrait(x,y,w,h,o){return `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="-100 -112 200 210" preserveAspectRatio="xMidYMid slice">${kid(o)}</svg>`;}
+function headIcon(who,mood,filter=false){return `<svg viewBox="-80 -95 160 160">${hairBack(who)}<circle cx="0" cy="0" r="58" fill="${SKIN[who]}"/>${face(who,mood,filter)}${hairFront(who)}</svg>`;}
+const headAt=(who,x,y,sz,mood='smile',filter=false)=>headIcon(who,mood,filter).replace('<svg',`<svg x="${x}" y="${y}" width="${sz}" height="${sz}"`);
+function phone(x,y,w,h,inner){const W=w-14,H=h-30;return `<g transform="translate(${x} ${y})"><rect width="${w}" height="${h}" rx="18" fill="#1d1d24"/><rect x="7" y="15" width="${W}" height="${H}" rx="8" fill="#fff"/><svg x="7" y="15" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${typeof inner==='function'?inner(W,H):inner}</svg><rect x="${w/2-14}" y="5" width="28" height="5" rx="2.5" fill="#444"/></g>`;}
+const post=(o,likes,extra='')=>(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(6,6,W-12,H-52,o)}<rect y="${H-44}" width="${W}" height="44" fill="#fff"/>${emo('❤️',26,H-22,24)}<text x="44" y="${H-21}" font-size="22" font-weight="800" fill="#d9384a" dominant-baseline="central">${likes}</text>${extra}`;
+function bubble(x,y,w,h,content,tx,ty,thought){
+  if(thought) return `<g><ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" fill="#fff" stroke="#333" stroke-width="3"/><circle cx="${tx}" cy="${ty}" r="7" fill="#fff" stroke="#333" stroke-width="2.5"/><circle cx="${(tx+x+w/2)/2}" cy="${(ty+y+h)/2}" r="11" fill="#fff" stroke="#333" stroke-width="2.5"/>${content}</g>`;
+  return `<g><path d="M${x+20},${y} h${w-40} q20,0 20,20 v${h-40} q0,20 -20,20 H${Math.min(x+w-20,tx+18)} L${tx},${ty} L${Math.max(x+20,tx-6)},${y+h} H${x+20} q-20,0 -20,-20 v-${h-40} q0,-20 20,-20Z" fill="#fff" stroke="#333" stroke-width="3"/>${content}</g>`;
+}
+/* backgrounds 800x500 */
+const BG={
+  park:`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="700" cy="80" r="44" fill="#ffd95a"/><rect y="330" width="800" height="170" fill="#8fd16a"/><rect x="80" y="170" width="26" height="180" fill="#8a5a33"/><circle cx="93" cy="150" r="80" fill="#5fae45"/><circle cx="40" cy="190" r="50" fill="#6cbd4f"/><circle cx="150" cy="185" r="55" fill="#6cbd4f"/>`,
+  play:`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="90" cy="80" r="40" fill="#ffd95a"/><rect y="340" width="800" height="160" fill="#8fd16a"/><path d="M520,110 L470,360 M520,110 L570,360 M740,110 L690,360 M740,110 L790,360 M515,110 L745,110" stroke="#c4553c" stroke-width="12" stroke-linecap="round"/><path d="M600,112 L600,290 M660,112 L660,290" stroke="#555" stroke-width="3"/><rect x="590" y="288" width="80" height="12" rx="4" fill="#3d6fa8"/><path d="M60,360 L200,200 L230,200 L230,360" fill="#f4c542" stroke="#c99a1e" stroke-width="5"/>`,
+  night:`<rect width="800" height="500" fill="#1f2a4d"/><rect y="410" width="800" height="90" fill="#2a2f45"/><rect x="560" y="60" width="170" height="140" rx="6" fill="#0e1530" stroke="#3b4a7a" stroke-width="8"/><circle cx="690" cy="105" r="22" fill="#f6e7a1"/><circle cx="600" cy="90" r="3" fill="#fff"/><circle cx="625" cy="150" r="2.5" fill="#fff"/><circle cx="700" cy="170" r="2" fill="#fff"/><rect x="0" y="330" width="520" height="130" rx="14" fill="#4a5d9a"/><rect x="20" y="300" width="150" height="60" rx="20" fill="#e8ecf8"/>`,
+  room:`<rect width="800" height="500" fill="#fbe7c6"/><rect y="410" width="800" height="90" fill="#d9b38c"/><rect x="560" y="60" width="170" height="140" rx="6" fill="#bfe6fb" stroke="#fff" stroke-width="8"/><circle cx="690" cy="105" r="22" fill="#ffd95a"/><rect x="40" y="250" width="110" height="160" fill="#c98f5e"/><rect x="50" y="265" width="90" height="10" fill="#a8743f"/><rect x="58" y="230" width="16" height="35" fill="#e63946"/><rect x="78" y="236" width="14" height="29" fill="#2a9d8f"/><rect x="96" y="226" width="18" height="39" fill="#457b9d"/>`,
+  mirror:`<rect width="800" height="500" fill="#fbe7c6"/><rect y="410" width="800" height="90" fill="#d9b38c"/><rect x="430" y="40" width="300" height="400" rx="150" fill="#dfeff5" stroke="#b98b4e" stroke-width="16"/>`
+};
+const scene=(inner,label='Bild')=>`<svg class="scene" viewBox="0 0 800 500" role="img" aria-label="${label}">${inner}</svg>`;
+const clock=(x,y,t)=>`<g transform="translate(${x} ${y})"><circle r="40" fill="#fff" stroke="#333" stroke-width="5"/><text y="2" font-size="24" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#333">${t}</text></g>`;
+
+/* ---------- words in pictures: headline, speech and thought bubbles ---------- */
+const FONT='font-family="ui-rounded, system-ui, -apple-system, sans-serif"';
+const tlen=t=>[...t].reduce((n,c)=>n+(c.codePointAt(0)>0x2000?1.7:1),0);
+function cap(t){const w=Math.round(tlen(t)*19.5+44);return `<g><rect x="14" y="12" rx="14" width="${w}" height="58" fill="#fff6c8" stroke="#2c2a1e" stroke-width="3"/><text x="${14+w/2}" y="42" font-size="30" font-weight="900" fill="#2c2a1e" text-anchor="middle" dominant-baseline="central" ${FONT}>${t}</text></g>`;}
+function say(x,y,t,tx,ty,o={}){const fs=o.fs||28;const w=o.w||Math.round(tlen(t)*fs*.6+(o.think?80:44));const h=o.h||(o.think?86:64);
+  return bubble(x,y,w,h,`<text x="${x+w/2}" y="${y+h/2+1}" font-size="${fs}" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#222" ${FONT}>${t}</text>`,tx,ty,o.think);}
+const think=(x,y,t,tx,ty,o={})=>say(x,y,t,tx,ty,{...o,think:true});
+/* a chat bubble with a small face in front, for messages on the phone or from far away */
+function msg(x,y,who,t,o={}){const fs=o.fs||26;const w=Math.round(tlen(t)*fs*.6+90);return `<g><rect x="${x}" y="${y}" width="${w}" height="62" rx="20" fill="#fff" stroke="#333" stroke-width="3"/>${headAt(who,x+6,y+5,52,'smile')}<text x="${x+66}" y="${y+32}" font-size="${fs}" font-weight="800" dominant-baseline="central" fill="#222" ${FONT}>${t}</text></g>`;}
+const tag=(x,y,t,fill='#fff')=>{const w=Math.round(tlen(t)*15+28);return `<g><rect x="${x-w/2}" y="${y-20}" width="${w}" height="40" rx="20" fill="${fill}" stroke="#333" stroke-width="2.5"/><text x="${x}" y="${y+1}" font-size="24" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#222" ${FONT}>${t}</text></g>`;};
+
+BG.school=`<rect width="800" height="500" fill="#f3ecdc"/><rect x="230" y="90" width="340" height="150" rx="8" fill="#2f5d46" stroke="#8a5a33" stroke-width="10"/><text x="400" y="168" font-size="46" fill="#e8f0e8" text-anchor="middle" dominant-baseline="central" ${FONT}>A B C</text><rect y="410" width="800" height="90" fill="#c9a77c"/>`;
+BG.yard=`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="700" cy="70" r="38" fill="#ffd95a"/><rect y="330" width="800" height="170" fill="#bdb6aa"/><rect x="0" y="250" width="800" height="90" fill="#d07a54"/><path d="M0,250 h800" stroke="#a85c3c" stroke-width="6"/>`;
+BG.party=BG.room+`<path d="M160,40 Q400,110 640,40" stroke="#555" stroke-width="2" fill="none"/>${[200,260,320,380,440,500,560,620].map((x,i)=>`<path d="M${x},${52+Math.sin(i)*6} l14,30 l14,-30Z" fill="${['#e63946','#f4a261','#2a9d8f','#9b5de5'][i%4]}"/>`).join('')}<ellipse cx="80" cy="120" rx="34" ry="42" fill="#e63946"/><ellipse cx="740" cy="130" rx="34" ry="42" fill="#2a9d8f"/><path d="M80,162 v80 M740,172 v80" stroke="#555" stroke-width="2"/>`;
+const cake=(x,y)=>`<g transform="translate(${x} ${y})"><rect x="-70" y="0" width="140" height="70" rx="10" fill="#f6a5c0"/><rect x="-70" y="0" width="140" height="18" rx="8" fill="#fff"/><rect x="-4" y="-34" width="8" height="34" fill="#9b5de5"/><path d="M0,-50 q8,10 0,16 q-8,-6 0,-16Z" fill="#ffb703"/></g>`;
+const bench=`<rect x="140" y="360" width="300" height="22" rx="6" fill="#8a5a33"/><rect x="160" y="380" width="14" height="50" fill="#6b4a2e"/><rect x="406" y="380" width="14" height="50" fill="#6b4a2e"/>`;
+
+/* ---------- state ---------- */
+const START={herz:7,likes:0,follow:0,mia:3,ayla:3,fake:false,fuchs:false,day:0,log:[]};
+let ST=JSON.parse(JSON.stringify(START)), cur='start', last=null; const hist=[];
+const L=(m)=>m||moodOf(ST.herz);
+const LENA=(o={})=>kid({who:'lena',...o,mood:L(o.mood)});
+const real=()=>ST.mia+ST.ayla;
+const online=()=>ST.follow;
+
+/* ---------- Wednesday comments ---------- */
+const COMMENTS=()=>ST.fake?
+  [{a:'mia',c:'❤️',k:1},{a:'🦊',c:'😍✨',k:1},{a:'🐸',c:'🤡 Fake',k:0},{a:'🐼',c:'👑👍',k:1}]:
+  [{a:'mia',c:'❤️ Schön!',k:1},{a:'🐼',c:'👍',k:1},{a:'🐸',c:'🐷😂',k:0},{a:'🦊',c:'🌈',k:1}];
+function commentsScreen(extraMean=0,removed=false){return (W,H)=>{
+  let g=`<rect width="${W}" height="${H}" fill="#fff"/>${portrait(10,8,W-20,120,{who:'lena',mood:ST.fake?'smile':'happy',filter:ST.fake})}`;
+  const list=COMMENTS().slice();for(let i=0;i<extraMean;i++)list.push({a:'🐻',c:'😂😂',k:0});
+  list.filter(c=>!(removed&&c.k===0&&c.a==='🐸')).forEach((c,i)=>{const y=140+i*44;
+    g+=`<rect x="8" y="${y}" width="${W-16}" height="38" rx="10" fill="${c.k?'#f3f7ee':'#fdecea'}"/>`+(c.a==='mia'?headAt('mia',12,y+3,32):emo(c.a,28,y+19,24))+`<text x="${W/2+20}" y="${y+20}" font-size="22" font-weight="800" text-anchor="middle" dominant-baseline="central" ${FONT}>${c.c}</text>`;});
+  if(removed) g+=emo('🚩✅',W/2,H-24,26);
+  return g;};}
+const followBtn=(t,col='#3a7fc4')=>(W,H)=>`<rect x="${W-130}" y="${H-40}" width="120" height="34" rx="17" fill="${col}"/><text x="${W-70}" y="${H-22}" font-size="18" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central" ${FONT}>${t}</text>`;
+const bellaPost=(btn)=>(W,H)=>post({who:'bella',mood:'smile',filter:true},'999')(W,H)+(btn?followBtn(btn)(W,H):'');
+const groupChat=(W,H)=>{let g=`<rect width="${W}" height="${H}" fill="#f2f5ff"/><text x="${W/2}" y="26" font-size="20" font-weight="900" text-anchor="middle" dominant-baseline="central" ${FONT}>📱 Online-Gruppe</text>`;
+  const rows=[['bella','🎭 Challenge!'],['🐼','🎭🏆'],...(ST.fuchs?[['🦊','Mach mit!']]:[]),['🐸','🎭🎭🎭']];
+  rows.forEach(([a,t],i)=>{const y=56+i*74;g+=`<rect x="8" y="${y}" width="${W-16}" height="62" rx="16" fill="#fff" stroke="#ccd" stroke-width="2"/>`+(a==='bella'?headAt('bella',14,y+6,50,'smile',true):emo(a,39,y+31,34))+`<text x="72" y="${y+32}" font-size="22" font-weight="800" dominant-baseline="central" ${FONT}>${t}</text>`;});
+  return g;};
+
+/* ---------- screens ---------- */
+const S={
+ start:{type:'start',next:'d0'},
+ d0:{type:'day',day:0,next:'mo1'},
+ mo1:{type:'scene',draw:()=>BG.park+bench+LENA({x:250,y:240,s:.8,mood:'happy',hold:'ice'})+kid({x:420,y:240,s:.8,who:'mia',mood:'happy',hold:'ice',flip:true})+kid({x:590,y:240,s:.8,who:'ayla',mood:'happy',hold:'ice',flip:true})+cap('Beste Freundinnen')+say(470,90,'Lecker!',560,170)+tag(420,470,'🤝 echt','#e6f4e2'),next:'mo2'},
+ mo2:{type:'scene',draw:()=>BG.night+cap('Abends')+LENA({x:230,y:280,mood:'amazed'})+phone(420,70,250,410,bellaPost())+think(40,100,'So schön!',190,215)+tag(545,62,'📱 online','#e9ecff'),next:'mo3'},
+ mo3:{type:'detektiv',next:'mo4'},
+ mo4:{type:'decide',who:'lena',draw:()=>BG.night+cap('Bella folgen?')+LENA({x:230,y:280,mood:'unsure'})+phone(420,70,250,410,bellaPost('+ Folgen')),
+  cards:[{ic:'➕📱',w:'Folgen',eff:{follow:1},res:()=>BG.night+cap('Bella antwortet nicht')+LENA({x:230,y:280,mood:'neutral'})+phone(420,70,250,410,(W,H)=>bellaPost()(W,H)+followBtn('✔ Folge ich','#4f9a3a')(W,H))+think(40,110,'Sieht sie mich?',190,215),next:'mo5'},
+         {ic:'✋📱',w:'Nicht folgen',eff:{herz:1},res:()=>BG.night+cap('Gute Nacht')+LENA({x:230,y:280,mood:'sleep'})+emo('💤',340,200,60),next:'mo5'}]},
+ mo5:{type:'feel',who:'lena',draw:()=>BG.night+cap('Wie fühlt sich Lena?')+LENA({x:300,y:280,mood:'unsure'})+phone(470,70,250,410,bellaPost()),next:'d1'},
+ d1:{type:'day',day:1,next:'di1'},
+ di1:{type:'scene',draw:()=>BG.mirror+cap('Das Selfie')+LENA({x:580,y:260,mood:'neutral',s:.9})+LENA({x:250,y:290,mood:'smile',hold:'phone'})+think(90,90,'Bin ich hübsch?',230,215),next:'di2'},
+ di2:{type:'decide',who:'lena',draw:()=>BG.room+cap('Posten?')+phone(130,80,230,400,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(6,6,W-12,H-60,{who:'lena',mood:'smile'})}`)+tag(245,90,'ohne Filter')+phone(450,80,230,400,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(6,6,W-12,H-60,{who:'lena',mood:'smile',filter:true})}`)+tag(565,90,'mit Filter 🎭'),
+  cards:[{ic:'🎭📤',w:'Mit Filter',eff:{herz:1,likes:48,follow:8,fake:true,mia:-1},res:()=>BG.room+cap('48 Likes!')+phone(420,60,260,420,post({who:'lena',mood:'smile',filter:true},48))+LENA({x:230,y:290,mood:'happy'})+think(40,110,'Alle mögen mich!',200,220)+msg(470,400,'mia','Bist du das? 🤔'),next:'di3'},
+         {ic:'😀📤',w:'Ohne Filter',eff:{herz:1,likes:9,follow:1},res:()=>BG.room+cap('9 Likes')+phone(420,60,260,420,post({who:'lena',mood:'happy'},9))+LENA({x:230,y:290,mood:'smile'})+msg(470,400,'mia','Schön! ❤️'),next:'di3'}]},
+ di3:{type:'scene',draw:()=>BG.school+cap('In der Schule')+LENA({x:250,y:290,hold:'phone',mood:'smile'})+kid({x:570,y:290,who:'ayla',mood:'amazed',flip:true})+say(260,110,'Mein Foto!',260,200),next:'di4'},
+ di4:{type:'decide',who:'ayla',draw:()=>BG.school+cap('Was sagt Ayla?')+LENA({x:250,y:290,hold:'phone',mood:'smile'})+kid({x:570,y:290,who:'ayla',mood:'unsure',flip:true})+think(520,90,'Hmm …',570,215),
+  cards:[{ic:'💛😊',w:'Loben',eff:{herz:1},res:()=>BG.school+cap('Ayla lobt')+LENA({x:250,y:290,mood:'happy'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true})+say(420,100,'Du bist echt schön!',560,215),next:'d2'},
+         {ic:'🎭🙋',w:'Auch Filter',eff:{follow:2},res:()=>BG.school+cap('Ayla will auch Filter')+LENA({x:250,y:290,mood:'smile',hold:'phone'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true})+say(440,100,'Ich auch! 🎭',560,215),next:'d2'},
+         {ic:'😂',w:'Auslachen',eff:{herz:-2,ayla:-2},res:()=>BG.school+cap('Ayla lacht')+LENA({x:250,y:290,mood:'sad'})+kid({x:570,y:290,who:'ayla',mood:'cheeky',flip:true})+say(460,100,'Haha, Fake!',560,215),next:'d2'}]},
+ d2:{type:'day',day:2,next:'mi1'},
+ mi1:{type:'scene',draw:()=>BG.room+cap('Kommentare')+LENA({x:220,y:290,mood:'neutral',hold:'phone'})+phone(430,20,250,460,commentsScreen()),next:'mi2'},
+ mi2:{type:'sort',title:'Nett oder gemein?',items:()=>COMMENTS().map(c=>({av:c.a==='mia'?headIcon('mia','smile'):c.a,tx:c.c,k:c.k?'y':'n'})),opts:[{ic:'👍',k:'y',l:'nett'},{ic:'👎',k:'n',l:'gemein'}],next:'mi3'},
+ mi3:{type:'decide',who:'mia',draw:()=>BG.room+cap('Gemeiner Kommentar')+kid({x:220,y:290,who:'mia',mood:'unsure',hold:'phone'})+phone(430,20,250,460,commentsScreen())+`<rect x="440" y="259" width="232" height="48" rx="12" fill="none" stroke="#d9384a" stroke-width="6"/>`,
+  cards:[{ic:'😂',w:'Mitlachen',eff:{herz:-3,mia:-2},res:()=>BG.night+cap('Lena weint')+LENA({x:250,y:290,mood:'cry',hold:'phone'})+phone(430,20,250,460,commentsScreen(2)),next:'mi4'},
+         {ic:'🙈',w:'Nichts tun',eff:{herz:-1,mia:-1},res:()=>BG.night+cap('Lena ist allein')+LENA({x:250,y:290,mood:'sad',hold:'phone'})+phone(430,20,250,460,commentsScreen()),next:'mi4'},
+         {ic:'💌❤️',w:'Trösten',eff:{herz:2,mia:1},res:()=>BG.room+cap('Mia tröstet')+LENA({x:250,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,420,(W,H)=>`<rect width="${W}" height="${H}" fill="#eef6ff"/>${portrait(W/2-60,20,120,120,{who:'mia',mood:'happy'})}${emo('💌',W/2,200,70)}<text x="${W/2}" y="290" font-size="26" font-weight="900" text-anchor="middle" ${FONT}>Ich mag dich!</text>${emo('❤️',W/2,340,44)}`),next:'mi4'},
+         {ic:'🚩',w:'Melden',eff:{herz:1},res:()=>BG.room+cap('Gemeldet')+LENA({x:250,y:290,mood:'smile',hold:'phone'})+phone(430,20,250,460,commentsScreen(0,true)),next:'mi4'}]},
+ mi4:{type:'scene',draw:()=>BG.room+cap('Neue Anfrage')+LENA({x:230,y:290,mood:'unsure',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/><circle cx="${W/2}" cy="120" r="70" fill="#ffe3c9"/>${emo('🦊',W/2,120,80)}<text x="${W/2}" y="230" font-size="28" font-weight="900" text-anchor="middle" ${FONT}>Freund?</text>${emo('✅',W/2-50,310,50)}${emo('❌',W/2+50,310,50)}`)+think(60,100,'Wer ist das?',220,215),next:'mi5'},
+ mi5:{type:'decide',who:'lena',draw:()=>S.mi4.draw().replace(cap('Neue Anfrage'),cap('Annehmen?')),
+  cards:[{ic:'✅🦊',w:'Annehmen',eff:{follow:1,likes:5,fuchs:true},res:()=>BG.room+cap('Neuer Online-Freund')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${emo('🦊',W/2,120,80)}${emo('❤️❤️❤️',W/2,240,40)}`)+think(40,100,'Kenne ich nicht …',210,215),next:'d3'},
+         {ic:'❌🦊',w:'Ablehnen',eff:{},res:()=>BG.room+cap('Abgelehnt')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${emo('🦊',W/2,140,80)}${emo('❌',W/2,140,140)}`),next:'d3'},
+         {ic:'👩❓',w:'Mama fragen',eff:{herz:1},res:()=>BG.room+cap('Mama fragen')+kid({x:560,y:230,who:'adult',mood:'smile',s:1.05,flip:true})+LENA({x:260,y:300,mood:'smile',hold:'phone'})+say(430,40,'Kennst du ihn?',540,140),next:'d3'}]},
+ d3:{type:'day',day:3,next:'do1'},
+ do1:{type:'scene',draw:()=>BG.night+cap('22 Uhr')+clock(470,110,'22:00')+LENA({x:220,y:300,mood:'neutral',hold:'phone'})+emo('❤️',330,250,34)+emo('🔔',400,260,40)+think(40,100,'Noch mehr Likes?',200,230),next:'do2'},
+ do2:{type:'decide',who:'lena',draw:()=>S.do1.draw().replace(cap('22 Uhr'),cap('Was jetzt?')),
+  cards:[{ic:'📵😴',w:'Weglegen',eff:{herz:1},res:()=>BG.night+cap('Gute Nacht')+clock(470,110,'22:05')+LENA({x:220,y:300,mood:'sleep'})+emo('💤',330,200,56)+`<rect x="580" y="330" width="120" height="80" fill="#6b4a2e"/><rect x="610" y="318" width="40" height="14" rx="3" fill="#1d1d24"/>`,next:'do3'},
+         {ic:'📱🔁',w:'Weiter',eff:{herz:-2,likes:15},res:()=>BG.night+cap('Spät und müde')+clock(470,110,'23:30')+LENA({x:220,y:300,mood:'tired',hold:'phone'})+emo('❤️',330,250,34)+emo('❤️',360,200,28)+emo('🥱',600,330,70),next:'do3'}]},
+ do3:{type:'scene',draw:()=>BG.room+cap('Online-Freunde')+LENA({x:220,y:300,mood:'unsure',hold:'phone'})+phone(430,20,260,460,groupChat)+think(30,100,'Mitmachen?',200,230),next:'do4'},
+ do4:{type:'decide',who:'lena',draw:()=>S.do3.draw(),
+  cards:[{ic:'🎭🏆',w:'Mitmachen',eff:{likes:30,follow:10,herz:-1,fake:true},res:()=>BG.room+cap('+30 Likes')+LENA({x:220,y:300,mood:'neutral',hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},ST.likes))+think(20,100,'Noch mehr Filter …',190,230),next:'d4'},
+         {ic:'✋',w:'Nein',eff:{},res:()=>BG.room+cap('Nein danke')+LENA({x:250,y:300,mood:'smile',hold:'phone'})+emo('✋',560,250,140),next:'d4'},
+         {ic:'📞',w:'Mia anrufen',eff:{herz:1,mia:1},res:()=>BG.room+cap('Anruf bei Mia')+LENA({x:220,y:300,mood:'happy',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#e8f6e8"/>${portrait(6,40,W-12,H-80,{who:'mia',mood:'happy'})}`)+say(500,20,'Hallo Lena!',560,90),next:'d4'}]},
+ d4:{type:'day',day:4,next:'fr1'},
+ fr1:{type:'scene',draw:()=>BG.mirror+cap('Einladung')+LENA({x:580,y:270,mood:'unsure',s:.9})+LENA({x:240,y:300,mood:'unsure',hold:'phone'})+msg(20,90,'mia','Spielplatz? 🛝')+think(150,170,'Ohne Filter?',240,235,{fs:24,h:70}),next:'fr2'},
+ fr2:{type:'decide',who:'lena',draw:()=>S.fr1.draw().replace(cap('Einladung'),cap('Hingehen?')),
+  cards:[{ic:'🛝😀',w:'Hingehen',eff:{herz:3,mia:1},res:()=>BG.play+cap('Spielplatz!')+LENA({x:630,y:210,mood:'happy',s:.7})+kid({x:400,y:260,who:'mia',mood:'happy',s:.85,flip:true})+say(300,60,'Juhu!',380,170),next:'fr3'},
+         {ic:'🤒🛏️',w:'Ausrede',eff:{herz:-3,mia:-2},res:()=>`<svg x="0" y="0" width="400" height="500" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">${BG.night}${LENA({x:300,y:290,mood:'sad',hold:'phone'})}</svg><svg x="400" y="0" width="400" height="500" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">${BG.play}${kid({x:500,y:290,who:'mia',mood:'sad'})}</svg><rect x="397" width="6" height="500" fill="#fff"/>`+cap('Bin krank.')+tag(600,90,'Mia wartet'),next:'fr3'},
+         {ic:'🎭📤',w:'Filter-Foto',eff:{herz:-1,likes:30,follow:5,fake:true,mia:-1},res:()=>BG.play+cap('Mia ist verwirrt')+kid({x:240,y:290,who:'mia',mood:'unsure',hold:'phone'})+phone(440,60,250,420,post({who:'lena',mood:'smile',filter:true},'+30'))+think(40,100,'Wo ist Lena?',220,220),next:'fr3'}]},
+ fr3:{type:'scene',draw:()=>BG.yard+cap('Pause')+bench+LENA({x:290,y:270,s:.85,hold:'phone'})+kid({x:620,y:270,who:'ayla',mood:'smile',s:.85,flip:true})+`<circle cx="700" cy="440" r="34" fill="#fff" stroke="#333" stroke-width="3"/><path d="M670,430 q30,20 60,0" stroke="#333" stroke-width="3" fill="none"/>`+think(60,90,'Likes?',260,190),next:'fr4'},
+ fr4:{type:'decide',who:'ayla',draw:()=>S.fr3.draw().replace(cap('Pause'),cap('Was macht Ayla?')),
+  cards:[{ic:'⚽🤝',w:'Holen',eff:{herz:2,ayla:1},res:()=>BG.yard+cap('Zusammen spielen')+LENA({x:300,y:270,s:.85,mood:'happy'})+kid({x:540,y:270,who:'ayla',mood:'happy',s:.85,flip:true})+`<circle cx="420" cy="430" r="34" fill="#fff" stroke="#333" stroke-width="3"/>`+say(450,60,'Komm, spielen!',540,180),next:'d5'},
+         {ic:'🚶',w:'Weggehen',eff:{herz:-1,ayla:-2},res:()=>BG.yard+cap('Lena bleibt allein')+bench+LENA({x:290,y:270,s:.85,mood:'sad',hold:'phone'})+kid({x:740,y:270,who:'ayla',mood:'neutral',s:.6,flip:true}),next:'d5'},
+         {ic:'📱📱',w:'Auch Handy',eff:{},res:()=>BG.yard+cap('Beide am Handy')+bench+LENA({x:250,y:270,s:.85,mood:'neutral',hold:'phone'})+kid({x:420,y:270,who:'ayla',mood:'neutral',s:.85,hold:'phone',flip:true}),next:'d5'}]},
+ d5:{type:'day',day:5,next:'sa1'},
+ sa1:{type:'scene',draw:()=>BG.party+cap('Ayla hat Geburtstag')+kid({x:330,y:250,who:'ayla',mood:'happy',s:.85})+kid({x:540,y:250,who:'mia',mood:'happy',s:.85,flip:true})+cake(430,400)+say(250,90,'Kommst du, Lena?',320,165),next:'sa2'},
+ sa2:{type:'decide',who:'lena',draw:()=>BG.party+cap('Feiern?')+LENA({x:250,y:290,mood:'unsure',hold:'phone'})+cake(560,400)+kid({x:620,y:220,who:'ayla',mood:'smile',s:.6,flip:true})+kid({x:500,y:220,who:'mia',mood:'smile',s:.6,flip:true}),
+  cards:[{ic:'🎂😀',w:'Mitfeiern',eff:{herz:2,ayla:1,mia:1},res:()=>BG.party+cap('Party!')+LENA({x:240,y:250,s:.8,mood:'happy'})+kid({x:420,y:250,who:'ayla',mood:'happy',s:.8})+kid({x:600,y:250,who:'mia',mood:'happy',s:.8,flip:true})+cake(420,420),next:'sa3'},
+         {ic:'📸🎭',w:'Nur Fotos',eff:{likes:20,follow:3,herz:-1,ayla:-1,mia:-1},res:()=>BG.party+cap('Nur am Handy')+LENA({x:240,y:270,s:.85,mood:'neutral',hold:'phone'})+kid({x:430,y:250,who:'ayla',mood:'sad',s:.8})+kid({x:610,y:250,who:'mia',mood:'unsure',s:.8,flip:true})+say(330,80,'Leg das Handy weg!',430,175),next:'sa3'},
+         {ic:'🏠📱',w:'Zuhause',eff:{herz:-2,ayla:-2,mia:-1},res:()=>BG.night+cap('Allein mit Likes')+LENA({x:300,y:290,mood:'sad',hold:'phone'})+emo('❤️',430,240,36)+emo('❤️',470,200,30),next:'sa3'}]},
+ sa3:{type:'scene',draw:()=>BG.room+cap('Mia macht sich Sorgen')+kid({x:250,y:300,who:'mia',mood:'unsure'})+bubble(390,80,300,230,headAt('lena',450,100,180,moodOf(Math.min(ST.herz,5))),310,200,true),next:'sa4'},
+ sa4:{type:'decide',who:'mia',draw:()=>S.sa3.draw().replace(cap('Mia macht sich Sorgen'),cap('Was macht Mia?')),
+  cards:[{ic:'📷😜',w:'Echtes Foto',eff:{herz:3,mia:1},res:()=>BG.room+cap('Lena lacht')+LENA({x:230,y:290,mood:'happy',hold:'phone'})+phone(430,40,250,430,post({who:'mia',mood:'cheeky'},''))+tag(555,445,'Echt Mia! 😂'),next:'d6'},
+         {ic:'👍🎭',w:'Like',eff:{likes:1},res:()=>BG.night+cap('Nur ein Like')+LENA({x:230,y:290,hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},ST.likes)),next:'d6'},
+         {ic:'👩❓',w:'Mama fragen',eff:{herz:2},res:()=>BG.room+cap('Mia fragt Mama')+kid({x:540,y:230,who:'adult',mood:'smile',s:1.05,flip:true})+kid({x:270,y:300,who:'mia',mood:'smile'})+say(380,40,'Wir rufen Lena an!',530,140),next:'d6'},
+         {ic:'🙈',w:'Nichts tun',eff:{herz:-2,mia:-1},res:()=>BG.night+cap('Niemand fragt')+LENA({x:300,y:290,mood:'sad',hold:'phone'}),next:'d6'}]},
+ d6:{type:'day',day:6,next:'so1'},
+ so1:{type:'sort',title:'Echt oder online?',items:()=>[{av:headIcon('mia','smile'),tx:'Mia',k:'r'},{av:headIcon('bella','smile',true),tx:'Bella',k:'o'},{av:headIcon('ayla','smile'),tx:'Ayla',k:'r'},{av:'🦊',tx:'Fuchs',k:'o'},{av:'🐼',tx:'Panda',k:'o'},{av:headIcon('adult','smile'),tx:'Mama',k:'r'}],opts:[{ic:'🤝',k:'r',l:'echt'},{ic:'📱',k:'o',l:'online'}],next:'so2'},
+ so2:{type:'decide',who:'lena',draw:()=>BG.room+cap('Die Filter-App')+LENA({x:230,y:290,hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/><rect x="${W/2-70}" y="110" width="140" height="140" rx="32" fill="#c56bf0"/>${emo('🎭',W/2,180,90)}`),
+  cards:[{ic:'🗑️🎭',w:'Löschen',eff:{herz:2},res:()=>BG.room+cap('Gelöscht')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/>${emo('🎭',W/2-30,150,70)}${emo('➡️',W/2+10,230,40)}${emo('🗑️',W/2+40,300,80)}`),next:'so3'},
+         {ic:'🐰😂',w:'Nur Spaß',eff:{herz:2,mia:1},res:()=>BG.park+cap('Nur zum Spaß')+LENA({x:300,y:260,mood:'happy'})+kid({x:520,y:260,who:'mia',mood:'happy',flip:true})+emo('🐰',300,160,70)+emo('🐶',520,160,70)+tag(410,470,'nicht posten 🚫'),next:'so3'},
+         {ic:'🎭🔁',w:'Weiter so',eff:{herz:-2,likes:20},res:()=>BG.night+cap('Immer mit Filter')+LENA({x:230,y:290,mood:'sad',hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},ST.likes)),next:'so3'}]},
+ so3:{type:'decide',who:'lena',draw:()=>BG.room+cap('Sonntag Nachmittag')+LENA({x:230,y:300,hold:'phone'})+headAt('mia',575,80,80,'happy')+headAt('ayla',640,80,80,'happy')+tag(660,230,'Komm raus! 🛝')+phone(330,250,120,200,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(4,4,W-8,H-40,{who:'bella',mood:'smile',filter:true})}<rect x="6" y="${H-32}" width="60" height="24" rx="6" fill="#e63946"/><text x="36" y="${H-19}" font-size="15" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central" ${FONT}>LIVE</text>`),
+  cards:[{ic:'🛝🤝',w:'Rausgehen',eff:{herz:2,mia:1,ayla:1},res:()=>BG.play+cap('Draußen mit Freundinnen')+LENA({x:250,y:250,s:.8,mood:'happy'})+kid({x:420,y:250,who:'mia',mood:'happy',s:.8,flip:true})+kid({x:590,y:250,who:'ayla',mood:'happy',s:.8,flip:true}),next:'end'},
+         {ic:'📱🔴',w:'Live schauen',eff:{herz:-2,follow:1,mia:-1,ayla:-1},res:()=>BG.night+cap('Allein am Handy')+LENA({x:300,y:290,mood:'sad',hold:'phone'}),next:'end'}]},
+ end:{type:'scene',ending:true,draw:()=>{const h=ST.herz,r=real();
+   if(h>=7&&r>=4) return BG.play+cap('Echte Freundinnen')+LENA({x:250,y:250,s:.8,mood:'happy'})+kid({x:420,y:250,who:'mia',mood:'happy',s:.8,flip:true})+kid({x:590,y:250,who:'ayla',mood:'happy',s:.8,flip:true})+say(330,90,'Du bist genug!',420,170)+emo('🌈',735,60,80);
+   if(h>=4&&r>=2) return BG.park+cap('Ein neuer Anfang?')+LENA({x:320,y:260,mood:'neutral'})+kid({x:520,y:260,who:'mia',mood:'smile',flip:true})+say(430,90,'Morgen spielen?',520,185)+emo('🌤️',735,60,80);
+   return BG.night+cap('Viele Likes. Allein.')+LENA({x:300,y:290,mood:'cry',hold:'phone'})+`<rect x="470" y="240" width="200" height="76" rx="38" fill="#fff"/>`+emo('❤️',515,278,40)+`<text x="545" y="280" font-size="40" font-weight="900" fill="#d9384a" dominant-baseline="central" ${FONT}>${ST.likes}</text>`+emo('🌧️',735,60,80);},next:'review'},
+ review:{type:'review'}
+};
+
+/* ---------- top bar ---------- */
+const $=id=>document.getElementById(id);
+const arrow=d=>d>0?'⬆️':d<0?'⬇️':'';
+function drawTop(s){
+  $('week').innerHTML=DAYS.map((d,i)=>`<span class="${i===ST.day&&s.type!=='start'&&s.type!=='review'?'now':''} ${i<ST.day||s.type==='review'?'done':''}">${d}</span>`).join('');
+  const t=$('turn');
+  if(s.who){t.hidden=false;t.className='turn '+s.who+(s.type==='decide'?' pulse':'');t.innerHTML=headIcon(s.who,'smile')+`<span>${{lena:'Lena',mia:'Mia',ayla:'Ayla'}[s.who]}</span>`;}
+  else t.hidden=true;
+  const d=last&&cur===last.at?last.d:{};
+  const on=ST.herz, col=on>=7?'#3f9b4a':on>=4?'#e0a526':'#d14b3c';
+  $('meter').innerHTML=headIcon('lena',moodOf(ST.herz)).replace('<svg','<svg class="face"')+`<div class="bar" aria-label="Lena ${ST.herz} von 10">${Array.from({length:10},(_,i)=>`<i style="${i<on?`background:${col}`:''}"></i>`).join('')}</div><span class="delta">${arrow(d.herz)}</span>`;
+  const op=v=>[.12,.35,.62,1][v], gs=v=>[1,1,.6,0][v];
+  const fr=(w,v,dv)=>`<span class="fr${dv<0?' lost':''}">${headIcon(w,v>=2?'smile':v===1?'unsure':'sad').replace('<svg',`<svg style="opacity:${op(v)};filter:grayscale(${gs(v)})"`)}${dv<0?'<b>💔</b>':''}</span>`;
+  const dm=d.mia||0, da=d.ayla||0;
+  $('real').innerHTML=`<span>🤝</span>${fr('mia',ST.mia,dm)}${fr('ayla',ST.ayla,da)}<span class="ar">${arrow(d.real)}</span>`;
+  $('online').innerHTML=`<span>📱</span><span>👥 ${ST.follow}</span><span>❤️ ${ST.likes}</span><span class="ar">${arrow(d.online)}</span>`;
+}
+
+/* ---------- flow ---------- */
+function snapshot(){return {cur,st:JSON.parse(JSON.stringify(ST)),last};}
+function go(id){hist.push(snapshot());cur=id;enter();render();}
+function back(){const h=hist.pop();if(!h)return;cur=h.cur;ST=h.st;last=h.last;render();}
+function restart(){hist.length=0;ST=JSON.parse(JSON.stringify(START));cur='start';last=null;render();}
+const snap=()=>({herz:ST.herz,likes:ST.likes,real:real(),follow:ST.follow,mia:ST.mia,ayla:ST.ayla});
+function enter(){const s=S[cur];
+  if(s.type==='day'){ if(s.day>0) ST.log[s.day-1]=snap(); ST.day=s.day; }
+  if(s.ending) ST.log[6]=snap();
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function choose(c,k){
+  hist.push(snapshot());
+  const rid='r_'+cur+'_'+k, b=snap();
+  const e=c.eff;
+  ST.herz=clamp(ST.herz+(e.herz||0),0,10); ST.mia=clamp(ST.mia+(e.mia||0),0,3); ST.ayla=clamp(ST.ayla+(e.ayla||0),0,3);
+  ST.likes+=e.likes||0; ST.follow+=e.follow||0; if(e.fake)ST.fake=true; if(e.fuchs)ST.fuchs=true;
+  S[rid]={type:'scene',draw:c.res,next:c.next};cur=rid;
+  last={at:rid,d:{herz:ST.herz-b.herz,real:real()-b.real,mia:ST.mia-b.mia,ayla:ST.ayla-b.ayla,online:(ST.follow-b.follow)+(ST.likes-b.likes)}};
+  render();
+}
+function navBar(nextId,middle){
+  const n=document.createElement('div');n.className='nav';
+  const b=document.createElement('button');b.className='arrow back';b.textContent='◀';b.setAttribute('aria-label','Zurück');b.disabled=!hist.length;b.onclick=back;
+  const f=document.createElement('button');f.className='arrow';f.textContent='▶';f.setAttribute('aria-label','Weiter');if(nextId)f.onclick=()=>go(nextId);else f.disabled=true;
+  let m=middle; if(!m){m=document.createElement('button');m.className='restart';m.textContent='⟲';m.setAttribute('aria-label','Von vorn');m.onclick=restart;}
+  n.append(b,m,f);return n;
+}
+function feelRow(){const r=document.createElement('div');r.className='feel';['😊','🙂','😐','☹️','😢','😨'].forEach(e=>{const b=document.createElement('button');b.textContent=e;b.setAttribute('aria-pressed','false');b.onclick=()=>{r.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');};r.appendChild(b);});return r;}
+
+function render(){
+  const s=S[cur], st=$('stage'), bt=$('bottom');
+  st.innerHTML='';bt.innerHTML='';drawTop(s);
+  if(s.type==='start'){
+    st.innerHTML=`<div class="startbox"><svg viewBox="0 0 800 330">${BG.park.replace('height="500"','height="330"')}${LENA({x:250,y:180,s:.8,mood:'happy'})}${kid({x:410,y:180,who:'mia',mood:'happy',s:.8,flip:true})}${kid({x:570,y:180,who:'ayla',mood:'happy',s:.8,flip:true})}</svg><h1>Echte Freundinnen</h1><div class="pair" aria-label="Zu zweit spielen">🧒🧒 📱</div><p class="small">Für die Lehrkraft: Eine Woche mit Lena, Mia und Ayla, 13 Entscheidungen und 3 Aufgaben. Partnerarbeit: ein iPad pro Paar, die beiden treffen alle Entscheidungen gemeinsam. Das Gesicht oben zeigt, in wessen Rolle sie gerade entscheiden (meist Lena, manchmal Mia oder Ayla). Danach vergleicht die Klasse die Enden im Plenum. Oben sieht man, wie es Lena geht, wie nah ihre echten Freundinnen sind und wie viele Online-Freunde und Likes sie hat. Das Spiel speichert nichts.</p></div>`;
+    const p=document.createElement('button');p.className='arrow';p.style.width='140px';p.textContent='▶';p.setAttribute('aria-label','Start');p.onclick=()=>go('d0');bt.appendChild(p);return;}
+  if(s.type==='day'){
+    st.innerHTML=`<div class="daycard"><span class="sun">${s.day===6?'☀️🌈':'☀️'}</span><span class="d">${DAYS[s.day]}</span><span class="full">${DAYFULL[s.day]}</span></div>`;
+    bt.appendChild(navBar(s.next));return;}
+  if(s.type==='scene'){st.innerHTML=scene(s.draw());bt.appendChild(navBar(s.next));return;}
+  if(s.type==='feel'){st.innerHTML=scene(s.draw());bt.appendChild(navBar(s.next,feelRow()));return;}
+  if(s.type==='decide'){
+    st.innerHTML=scene(s.draw());
+    const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;bk.disabled=!hist.length;
+    const c=document.createElement('div');c.className='cards';
+    s.cards.forEach((cd,k)=>{const b=document.createElement('button');b.className='card';b.innerHTML=`<span class="ic" aria-hidden="true">${cd.ic}</span><span class="w">${cd.w}</span>`;b.onclick=()=>choose(cd,k);c.appendChild(b);});
+    bt.append(bk,c);return;}
+  if(s.type==='detektiv'){
+    const spots=[{x:0,y:-4,rx:46,ry:20},{x:38,y:22,rx:13,ry:13},{x:0,y:33,rx:20,ry:13}];const found=new Set();
+    const ph=(filter,hot)=>`<svg x="0" y="0" width="100%" height="100%" viewBox="-100 -112 200 210">${kid({who:'bella',mood:'smile',filter})}${spots.map((p,i)=>`<ellipse data-i="${i}" class="${hot?'hot':'mark'}" cx="${p.x}" cy="${p.y}" rx="${p.rx}" ry="${p.ry}" fill="${hot?'rgba(0,0,0,0)':'none'}" stroke="none" stroke-width="5" ${hot?'style="cursor:pointer"':''}/>`).join('')}</svg>`;
+    st.innerHTML=`<svg class="scene" viewBox="0 0 800 500" role="img" aria-label="Echt und Filter vergleichen"><rect width="800" height="500" fill="#fff7e0"/>
+      <g transform="translate(80 80)"><rect width="270" height="410" rx="22" fill="#1d1d24"/><rect x="10" y="18" width="250" height="374" rx="10" fill="#fdeef4"/><svg x="10" y="18" width="250" height="374">${ph(false,false)}</svg></g>
+      <g transform="translate(450 80)"><rect width="270" height="410" rx="22" fill="#1d1d24"/><rect x="10" y="18" width="250" height="374" rx="10" fill="#fdeef4"/><svg x="10" y="18" width="250" height="374">${ph(true,true)}</svg></g>
+      ${cap('Echt oder Filter?')}${tag(215,90,'echt 📷')}${tag(585,90,'Filter 🎭')}${emo('↔️',400,280,50)}</svg>`;
+    const cnt=document.createElement('span');cnt.className='found';
+    const upd=()=>{cnt.textContent='🔍 '+[0,1,2].map(i=>i<found.size?'🟡':'⚪').join('');};upd();
+    st.querySelectorAll('.hot').forEach(el=>el.addEventListener('click',()=>{const i=+el.dataset.i;found.add(i);
+      st.querySelectorAll(`ellipse[data-i="${i}"]`).forEach(e=>e.setAttribute('stroke','#ffb703'));upd();}));
+    bt.appendChild(navBar(s.next,cnt));return;}
+  if(s.type==='sort'){
+    const box=document.createElement('div');box.className='sortbox';
+    box.innerHTML=`<div class="htitle">${s.title}</div>`;
+    const wrap=document.createElement('div');wrap.className='sortlist';
+    s.items().forEach(c=>{const d=document.createElement('div');d.className='cmt';
+      d.innerHTML=`<span class="av">${c.av}</span><span class="tx">${c.tx}</span><span class="bt">${s.opts.map(o=>`<button aria-label="${o.l}" data-k="${o.k}">${o.ic}</button>`).join('')}</span>`;
+      d.querySelectorAll('.bt button').forEach(b=>b.onclick=()=>{if(b.dataset.k===c.k){d.classList.remove('no');d.classList.add('ok');d.querySelector('.bt').innerHTML=`<span style="font-size:2.2rem">${b.textContent}</span>`;}else{d.classList.remove('no');void d.offsetWidth;d.classList.add('no');}});
+      wrap.appendChild(d);});
+    box.appendChild(wrap);st.appendChild(box);bt.appendChild(navBar(s.next));return;}
+  if(s.type==='review'){
+    const maxL=Math.max(1,...ST.log.map(l=>l?l.likes:0));
+    const col=h=>h>=7?'var(--good)':h>=4?'#e0a526':'var(--bad)';
+    const row=(lab,fn)=>`<span class="lab">${lab}</span>`+DAYS.map((d,i)=>{const l=ST.log[i];return l?fn(l):'<span></span>';}).join('');
+    let h=`<div class="review" role="img" aria-label="Lenas Woche"><span></span>${DAYS.map(d=>`<span class="dn">${d}</span>`).join('')}`;
+    h+=row(headIcon('lena','smile').replace('<svg','<svg style="width:44px;height:44px"'),l=>`<span class="fc">${headIcon('lena',moodOf(l.herz))}</span>`);
+    h+=row('📶',l=>`<span class="lk"><b style="height:${Math.max(4,l.herz/10*80)}px;background:${col(l.herz)}"></b></span>`);
+    h+=row('🤝',l=>`<span class="lk"><b style="height:${Math.max(4,l.real/6*80)}px;background:var(--mia)"></b></span>`);
+    h+=row('❤️',l=>`<span class="lk"><small>${l.likes}</small><b style="height:${Math.max(3,l.likes/maxL*70)}px"></b></span>`)+'</div>';
+    st.innerHTML=h;
+    const c=document.createElement('div');c.className='cards';
+    const r=document.createElement('button');r.className='card';r.innerHTML='<span class="ic">⟲</span><span class="w">Nochmal</span>';r.onclick=restart;
+    const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;
+    c.appendChild(r);bt.append(bk,c);return;}
+}
+document.addEventListener('keydown',e=>{const s=S[cur];if(e.key==='ArrowRight'&&s.next&&s.type!=='decide')go(s.next);if(e.key==='ArrowLeft')back();});
+render();
+</script>
+
+</body>
+</html>
