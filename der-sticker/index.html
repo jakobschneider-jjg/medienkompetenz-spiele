@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Der Sticker</title>
+<style>
+/* Layout: one-screen classroom app for iPad landscape. Top: week strip, whose turn, Lena's heart barometer.
+   Middle: the drawn scene. Bottom: big picture cards or arrows. No text the children must read. */
+:root{
+  --paper:#fdf3cf;
+  --paper-deep:#f2dd96;
+  --ink:#2c2a1e;
+  --ink-soft:#6b6448;
+  --leaf:#4f9a3a;
+  --leaf-deep:#376c28;
+  --heart:#d9384a;
+  --lena:#e8a43a;
+  --mia:#3a7fc4;
+  --card:#fffaf0;
+  --good:#3f9b4a;
+  --bad:#d14b3c;
+  --font-ui: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-ui);margin:0;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:8px;padding-inline:16px;padding-block:8px;box-sizing:border-box;max-width:1400px;margin:0 auto}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible{outline:4px solid var(--mia);outline-offset:3px}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:14px;min-height:62px;flex-wrap:wrap}
+.week{display:flex;gap:5px}
+.week span{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:.95rem;background:var(--card);color:var(--ink-soft);border:3px solid transparent;position:relative}
+.week span.now{border-color:var(--leaf);color:var(--ink);transform:scale(1.12)}
+.week span.done{background:var(--paper-deep)}
+.turn{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:800;margin-left:auto}
+.turn svg{width:54px;height:54px;border-radius:50%;border:4px solid var(--ink);background:#fff}
+.turn[hidden]{display:none}
+.turn.lena svg{border-color:var(--lena)} .turn.mia svg{border-color:var(--mia)}
+.turn.pulse svg{animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.14)}}
+.meter{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:6px 10px}
+.meter svg.face{width:40px;height:40px}
+.bar{display:flex;gap:3px}
+.bar i{width:13px;height:30px;border-radius:4px;background:#e6dcc0;transition:background .5s, transform .5s}
+.bar i.on{transform:scaleY(1.05)}
+.delta{font-size:1.6rem;min-width:1.6em;text-align:center}
+.pill{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;padding:4px 12px;font-weight:900;font-size:1.15rem;font-variant-numeric:tabular-nums;min-height:46px;box-sizing:border-box}
+.pill svg{width:36px;height:36px;transition:opacity .5s}
+.pill.online{color:var(--heart)}
+.pill .ar{font-size:1.2rem}
+.fr{position:relative;display:inline-flex}
+.fr.lost svg{animation:shake .5s 3}
+.fr b{position:absolute;left:50%;top:-6px;font-size:1.5rem;transform:translateX(-50%);animation:drop 1.6s ease-out forwards;pointer-events:none}
+@keyframes drop{0%{opacity:0;transform:translate(-50%,-14px) scale(.6)}25%{opacity:1;transform:translate(-50%,0) scale(1.25)}100%{opacity:1;transform:translate(-50%,8px) scale(1)}}
+.sortbox{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+.htitle{font-size:2rem;font-weight:900;background:#fff6c8;border:3px solid var(--ink);border-radius:14px;padding:4px 18px}
+.turn.ayla svg{border-color:#8e5bd6} .turn.noah svg{border-color:#f08a24} .turn.ben svg{border-color:#2f5fa8}
+.klasse{gap:5px;padding:4px 10px}
+.kf{position:relative;display:inline-flex;border-radius:50%;border:3px solid #cfc7ae;background:#fff}
+.kf svg{width:30px;height:30px}
+.kf.n svg{opacity:.75}
+.kf.l{border-color:#d9384a;background:#fde3e3} .kf.h{border-color:#3f9b4a;background:#e6f4e2}
+.kf b{position:absolute;right:-8px;bottom:-8px;font-size:.95rem}
+.kf.ch{animation:pop .7s 2}
+@keyframes pop{50%{transform:scale(1.35)}}
+.share{color:#4a5260}
+.cmt .bt button:has(svg){width:70px;height:70px;padding:0;display:grid;place-items:center}
+.cmt .bt button svg{width:62px;height:62px}
+.cmt .bt button{position:relative} .cmt .bt button i{position:absolute;right:-6px;bottom:-6px;font-size:1.4rem;font-style:normal}
+.pick{position:relative} .pick i{font-style:normal;font-size:1.4rem}
+.top{gap:10px}
+.week{gap:4px} .week span{width:38px;height:38px}
+.turn{font-size:1.1rem;gap:6px} .turn svg{width:48px;height:48px}
+.cmt .tx svg{vertical-align:middle}
+.pick svg{width:52px;height:52px} .pick{font-size:2.2rem}
+g.no{animation:shake .4s}
+
+/* stage */
+.stage{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+.stage > svg.scene{max-width:100%;max-height:100%;width:auto;height:100%;aspect-ratio:8/5;border-radius:14px;box-shadow:0 4px 18px rgba(60,50,10,.18);background:#fff}
+.daycard{display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--card);border-radius:24px;padding:28px 60px;box-shadow:0 6px 0 var(--paper-deep)}
+.daycard .d{font-size:clamp(4rem,14vw,8rem);font-weight:900;color:var(--leaf);line-height:1}
+.daycard .sun{font-size:3rem}
+.daycard .full{font-size:1.1rem;color:var(--ink-soft)}
+
+/* bottom */
+.bottom{display:flex;align-items:center;justify-content:center;gap:14px;min-height:86px}
+.nav{display:flex;justify-content:space-between;width:100%;align-items:center;gap:12px}
+.arrow{width:88px;height:74px;border-radius:20px;background:var(--leaf);color:#fff;font-size:2.3rem;font-weight:900;box-shadow:0 4px 0 var(--leaf-deep);flex:none}
+.arrow.back{background:var(--paper-deep);color:var(--ink);box-shadow:0 4px 0 #d6c27e}
+.arrow:active{transform:translateY(3px);box-shadow:none}
+.arrow[disabled]{visibility:hidden}
+.restart{font-size:1.8rem;opacity:.5;padding:8px}
+.cards{display:flex;gap:14px;justify-content:center;flex:1;min-width:0}
+.card{flex:1 1 0;max-width:230px;min-width:0;background:var(--card);border:4px solid var(--paper-deep);border-radius:20px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 5px 0 var(--paper-deep)}
+.card:active{transform:translateY(4px);box-shadow:none}
+.card .ic{font-size:2.6rem;line-height:1.15;letter-spacing:2px;white-space:nowrap}
+.card .w{font-size:1.1rem;font-weight:800}
+.feel{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.feel button{font-size:2.4rem;width:68px;height:68px;border-radius:18px;background:var(--card);border:4px solid transparent}
+.feel button[aria-pressed="true"]{border-color:var(--leaf);transform:scale(1.1)}
+.found{font-size:2rem;letter-spacing:6px}
+
+/* sort activity */
+.sortlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:min(100%,760px);align-content:center}
+.cmt{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:10px 12px;border:4px solid transparent;transition:border-color .3s}
+.cmt .av{font-size:2.2rem;width:52px;height:52px;display:grid;place-items:center;border-radius:50%;background:#f3ead0;flex:none;overflow:hidden}
+.cmt .av svg{width:52px;height:52px}
+.cmt .tx{font-size:2rem;font-weight:800;flex:1;min-width:0}
+.cmt .bt{display:flex;gap:6px}
+.cmt .bt button{font-size:1.9rem;width:56px;height:56px;border-radius:14px;background:#f3ead0}
+.cmt.ok{border-color:var(--good)}
+.cmt.no{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* week review */
+.review{background:var(--card);border-radius:20px;padding:16px 20px;width:min(100%,900px);display:grid;grid-template-columns:auto repeat(7,minmax(0,1fr));gap:8px 10px;align-items:end}
+.review .lab{font-size:2rem;align-self:center}
+.review .dn{text-align:center;font-weight:800;color:var(--ink-soft)}
+.review .fc svg{width:100%;max-width:70px;display:block;margin:0 auto}
+.review .lk{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:118px;gap:4px}
+.review .lk b{display:block;width:60%;background:var(--heart);border-radius:6px 6px 0 0;opacity:.85}
+.review .lk small{font-weight:800;color:var(--heart);font-variant-numeric:tabular-nums}
+
+.startbox{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.startbox h1{font-size:clamp(2.2rem,6vw,4rem);color:var(--leaf);margin:0;text-wrap:balance}
+.startbox .pair{font-size:3rem;line-height:1}
+.startbox svg{width:min(80vw,420px);height:auto}
+.small{font-size:.95rem;color:var(--ink-soft);max-width:52ch;margin:0}
+
+@media (max-width:700px){
+  .week span{width:30px;height:30px;font-size:.75rem}
+  .bar i{width:8px;height:22px}
+  .card .ic{font-size:1.8rem} .card .w{font-size:.85rem}
+  .arrow{width:62px;height:58px;font-size:1.8rem}
+  .sortlist{grid-template-columns:1fr}
+  .feel button{width:48px;height:48px;font-size:1.7rem}
+  .review{grid-template-columns:auto repeat(7,minmax(0,1fr));padding:10px;gap:6px}
+  .review .lk{height:70px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.sortbox .sortlist{width:min(100%,920px)} .cmt span.tx{font-size:1.7rem}
+.cmt .pick svg{width:66px;height:66px}
+.daycard .press{display:flex;align-items:center;gap:10px;font-size:2rem;margin-top:8px;background:#fde3e3;border-radius:16px;padding:6px 14px}
+.daycard .press svg{width:56px;height:56px}
+.pill.ayla{gap:3px;padding:4px 10px;color:#8e5bd6} .pill.ayla svg{width:34px;height:34px;border-radius:50%;border:3px solid #8e5bd6;background:#fff}
+.review .fc small{display:block;font-size:.8rem;text-align:center} .review .fc svg{max-width:52px}
+.pill.ayla.now{box-shadow:0 0 0 4px #8e5bd6} .pill.ayla.pulse svg{animation:pulse 1.3s ease-in-out infinite}
+.review .lk{height:88px} .turn span{display:none} .review{gap:4px 10px;padding:10px 20px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top">
+    <div class="week" id="week"></div>
+    <div class="turn" id="turn" hidden></div>
+    <div class="meter" id="meter" title="So geht es Noah"></div>
+    <div class="pill klasse" id="klasse" title="Die Klasse: rot lacht mit, grün hilft"></div>
+    <div class="pill ayla" id="ayla" title="So geht es Ayla, 🙄 = so oft wurde sie für ihr Helfen ausgelacht"></div><div class="pill share" id="share" title="So oft wurde der Sticker weitergeschickt"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="bottom" id="bottom"></div>
+</div>
+
+<script>
+/* ---------- drawing kit ---------- */
+let U=0; const uid=()=>'u'+(++U);
+const SKIN={lena:'#f7d2b6',mia:'#8a5636',bella:'#f3cba8',adult:'#e9b998',ayla:'#c68e64'};
+const HAIR={lena:'#e8c25a',mia:'#2b1a10',bella:'#8a5a33',adult:'#6b4a2e',ayla:'#1b1b1b'};
+const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+const DAYFULL=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const moodOf=h=>h>=8?'happy':h>=6?'smile':h>=4?'neutral':h>=2?'sad':'cry';
+const emo=(t,x,y,sz=40)=>`<text x="${x}" y="${y}" font-size="${sz}" text-anchor="middle" dominant-baseline="central">${t}</text>`;
+
+function face(who,mood,filter){
+  let g='';const dark=who==='mia'||who==='ayla';const hc=dark?'#1a0f08':'#7a5a2a';
+  // eyes
+  [-1,1].forEach(sd=>{const ex=22*sd, ey=-4;
+    if(mood==='sleep'){g+=`<path d="M${ex-9},${ey} Q${ex},${ey+7} ${ex+9},${ey}" stroke="#2b2118" stroke-width="3" fill="none" stroke-linecap="round"/>`;}
+    else if(filter){g+=`<ellipse cx="${ex}" cy="${ey}" rx="14" ry="16" fill="#fff" stroke="#333" stroke-width="1.5"/><circle cx="${ex}" cy="${ey+1}" r="10" fill="#5aa0e6"/><circle cx="${ex}" cy="${ey+1}" r="5" fill="#1d2b3a"/><circle cx="${ex+4}" cy="${ey-4}" r="3" fill="#fff"/>`;
+      [[-10,-14,-16,-22],[-3,-16,-5,-24],[5,-15,7,-23]].forEach(([a,b,c,d])=>{g+=`<line x1="${ex+a*sd}" y1="${ey+b}" x2="${ex+c*sd}" y2="${ey+d}" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>`;});}
+    else if(mood==='tired'){g+=`<path d="M${ex-8},${ey} L${ex+8},${ey}" stroke="#2b2118" stroke-width="3" stroke-linecap="round"/><path d="M${ex-7},${ey} Q${ex},${ey+7} ${ex+7},${ey}" fill="#2b2118"/>`;}
+    else {g+=`<ellipse cx="${ex}" cy="${ey}" rx="6.5" ry="7.5" fill="#2b2118"/><circle cx="${ex+2}" cy="${ey-3}" r="2" fill="#fff"/>`;}
+  });
+  // brows
+  const B={happy:['M-32,-24 Q-22,-31 -12,-24','M12,-24 Q22,-31 32,-24'],smile:['M-32,-23 Q-22,-28 -12,-23','M12,-23 Q22,-28 32,-23'],
+    neutral:['M-32,-23 L-12,-23','M12,-23 L32,-23'],sad:['M-33,-19 L-12,-28','M12,-28 L33,-19'],cry:['M-33,-18 L-12,-29','M12,-29 L33,-18'],
+    unsure:['M-32,-23 L-12,-23','M12,-29 Q22,-34 32,-27'],tired:['M-32,-21 L-12,-21','M12,-21 L32,-21'],sleep:['M-32,-21 L-12,-21','M12,-21 L32,-21'],
+    amazed:['M-32,-30 Q-22,-37 -12,-30','M12,-30 Q22,-37 32,-30'],cheeky:['M-32,-26 Q-22,-31 -12,-24','M12,-24 Q22,-31 32,-26']}[mood]||[];
+  if(!filter) B.forEach(d=>g+=`<path d="${d}" stroke="${hc}" stroke-width="4" fill="none" stroke-linecap="round"/>`);
+  else g+=`<path d="M-34,-30 Q-22,-38 -10,-31" stroke="#5a3a1a" stroke-width="3" fill="none"/><path d="M10,-31 Q22,-38 34,-30" stroke="#5a3a1a" stroke-width="3" fill="none"/>`;
+  // cheeks, freckles, pimple
+  if(filter) g+=`<ellipse cx="-36" cy="16" rx="14" ry="9" fill="#ff7aa8" opacity=".5"/><ellipse cx="36" cy="16" rx="14" ry="9" fill="#ff7aa8" opacity=".5"/>`;
+  else if(['happy','smile','cheeky'].includes(mood)) g+=`<circle cx="-36" cy="16" r="8" fill="#ff8f8f" opacity=".3"/><circle cx="36" cy="16" r="8" fill="#ff8f8f" opacity=".3"/>`;
+  if(who==='lena'&&!filter) [[-38,8],[-30,13],[-40,16],[-26,7],[38,8],[30,13],[40,16],[26,7]].forEach(([a,b])=>g+=`<circle cx="${a}" cy="${b}" r="2.2" fill="#c98b5e"/>`);
+  if(who==='bella'&&!filter) g+=`<circle cx="38" cy="22" r="4.5" fill="#d2504a"/><path d="M-32,6 Q-22,11 -12,6 M12,6 Q22,11 32,6" stroke="#b58a6a" stroke-width="2" fill="none" opacity=".7"/>`;
+  // nose
+  g+= filter?`<path d="M-2,14 Q0,17 2,14" stroke="#c0907a" stroke-width="2" fill="none"/>`:`<path d="M-5,12 Q0,20 5,12" stroke="${dark?'#5c351e':'#c0907a'}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  // mouth
+  if(filter) g+=`<path d="M-17,29 Q0,45 17,29 Q0,33 -17,29Z" fill="#e2457a"/><path d="M-8,33 Q0,35 8,33" stroke="#fff" stroke-width="2" opacity=".7"/>`;
+  else {const M={happy:`<path d="M-21,26 Q0,52 21,26Z" fill="#7a2b2b"/><path d="M-17,27 L17,27 L15,32 L-15,32Z" fill="#fff"/>`,
+    smile:`<path d="M-16,28 Q0,42 16,28" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    neutral:`<path d="M-12,33 L12,33" stroke="#7a2b2b" stroke-width="3.5" stroke-linecap="round"/>`,
+    sad:`<path d="M-14,37 Q0,26 14,37" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    cry:`<path d="M-15,39 Q0,25 15,39" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M-24,6 q-5,12 0,16 q5,-4 0,-16Z M24,6 q-5,12 0,16 q5,-4 0,-16Z" fill="#6ec6ff"/>`,
+    unsure:`<path d="M-14,33 Q-7,28 0,33 Q7,38 14,33" stroke="#7a2b2b" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    tired:`<path d="M-10,34 Q0,31 10,34" stroke="#7a2b2b" stroke-width="3" fill="none"/>`,
+    sleep:`<ellipse cx="0" cy="33" rx="5" ry="4" fill="#7a2b2b"/>`,
+    amazed:`<ellipse cx="0" cy="33" rx="8" ry="10" fill="#7a2b2b"/>`,
+    cheeky:`<path d="M-18,27 Q0,46 18,27Z" fill="#7a2b2b"/><path d="M-8,34 Q0,52 8,34Z" fill="#e8607a"/>`};
+    g+=M[mood]||M.smile;}
+  return g;
+}
+function hairBack(who){
+  if(who==='lena') return `<path d="M-66,0 Q-80,-86 0,-82 Q80,-86 66,0 L82,112 Q52,126 34,84 L-34,84 Q-52,126 -82,112Z" fill="${HAIR.lena}"/>`;
+  if(who==='bella') return `<path d="M-68,0 Q-82,-88 0,-84 Q82,-88 68,0 L86,150 Q52,162 36,90 L-36,90 Q-52,162 -86,150Z" fill="${HAIR.bella}"/>`;
+  if(who==='mia'){let g='';for(let a=160;a<=380;a+=18){const r=a*Math.PI/180;g+=`<circle cx="${Math.cos(r)*62}" cy="${Math.sin(r)*62-6}" r="22" fill="${HAIR.mia}"/>`;}
+    return g+`<circle cx="-78" cy="-44" r="30" fill="${HAIR.mia}"/><circle cx="78" cy="-44" r="30" fill="${HAIR.mia}"/>`;}
+  if(who==='ayla') return `<path d="M-70,0 Q-80,-86 0,-82 Q80,-86 70,0 L72,52 Q60,66 44,56 L-44,56 Q-60,66 -72,52Z" fill="${HAIR.ayla}"/>`;
+  if(who==='adult') return `<circle cx="0" cy="-74" r="26" fill="${HAIR.adult}"/><path d="M-62,10 Q-72,-76 0,-72 Q72,-76 62,10 L60,40 L-60,40Z" fill="${HAIR.adult}"/>`;
+  return '';
+}
+function hairFront(who){
+  if(who==='lena') return `<path d="M-60,-12 Q-62,-72 0,-64 Q58,-72 60,-12 Q44,-46 14,-42 Q-16,-52 -60,-12Z" fill="${HAIR.lena}"/><path d="M-30,-58 Q-10,-50 0,-40 M10,-58 Q25,-50 32,-38" stroke="#c9a03e" stroke-width="3" fill="none"/>`;
+  if(who==='bella') return `<path d="M-60,-6 Q-64,-74 0,-66 Q64,-74 62,-6 Q50,-50 -6,-50 Q-30,-40 -60,-6Z" fill="${HAIR.bella}"/>`;
+  if(who==='mia'){let g='';for(let x=-46;x<=46;x+=18)g+=`<circle cx="${x}" cy="${-56+Math.abs(x)*0.25}" r="15" fill="${HAIR.mia}"/>`;return g;}
+  if(who==='ayla') return `<path d="M-60,-24 Q-62,-78 0,-72 Q62,-78 60,-24Z" fill="${HAIR.ayla}"/><path d="M-56,-46 Q0,-80 56,-46" stroke="#ff6fa8" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  if(who==='adult') return `<path d="M-58,-14 Q-56,-70 0,-64 Q56,-70 58,-14 Q30,-48 0,-46 Q-30,-48 -58,-14Z" fill="${HAIR.adult}"/>`;
+  return '';
+}
+function body(who){
+  const P='M-100,280 L-100,150 Q-98,88 -38,80 L38,80 Q98,88 100,150 L100,280Z';
+  if(who==='lena'){const id=uid();const C=['#e63946','#f4a261','#e9c46a','#2a9d8f','#457b9d','#9b5de5'];let s='';for(let i=0;i<12;i++)s+=`<rect x="-110" y="${80+i*17}" width="220" height="17" fill="${C[i%6]}"/>`;
+    return `<clipPath id="${id}"><path d="${P}"/></clipPath><g clip-path="url(#${id})">${s}</g>`;}
+  if(who==='mia') return `<path d="${P}" fill="#fbfbf7"/><path d="M-50,140 L50,140 L56,280 L-56,280Z" fill="#4a78b5"/><path d="M-50,140 L-60,86 M50,140 L60,86" stroke="#4a78b5" stroke-width="13"/><circle cx="-40" cy="150" r="5" fill="#e0c060"/><circle cx="40" cy="150" r="5" fill="#e0c060"/><rect x="-20" y="170" width="40" height="30" rx="4" fill="#3c669d"/>`;
+  if(who==='ayla') return `<path d="${P}" fill="#8e5bd6"/><path d="M0,128 l9,18 20,3 -15,14 4,20 -18,-10 -18,10 4,-20 -15,-14 20,-3Z" fill="#ffd34d"/>`;
+  if(who==='bella') return `<path d="${P}" fill="#ef8fb6"/><path d="M-30,80 Q0,110 30,80" fill="none" stroke="#d76e98" stroke-width="4"/>`;
+  return `<path d="${P}" fill="#5e9d74"/><path d="M-26,80 L0,110 L26,80" fill="#fff"/>`;
+}
+function hold(kind,sk){
+  if(kind==='ice') return `<path d="M44,120 L80,120 L62,178Z" fill="#d9a05b" stroke="#b07d3e" stroke-width="2"/><circle cx="62" cy="108" r="20" fill="#f6a5c0"/><circle cx="50" cy="176" r="15" fill="${sk}"/>`;
+  if(kind==='phone') return `<g transform="rotate(-8 50 150)"><rect x="22" y="100" width="56" height="96" rx="9" fill="#1d1d24"/><rect x="27" y="108" width="46" height="80" rx="4" fill="#9fd3ff"/></g><circle cx="30" cy="180" r="14" fill="${sk}"/><circle cx="78" cy="176" r="14" fill="${sk}"/>`;
+  return '';
+}
+/* a child (or adult). (x,y) = centre of the head */
+function kid(o){
+  const {x=0,y=0,s=1,who='lena',mood='smile',filter=false,flip=false,hold:h=null,ears=true}=o;
+  const sk=SKIN[who];
+  return `<g transform="translate(${x} ${y}) scale(${flip?-s:s} ${s})">${hairBack(who)}<rect x="-17" y="40" width="34" height="48" rx="10" fill="${sk}"/>${body(who)}${ears?`<circle cx="-57" cy="6" r="11" fill="${sk}"/><circle cx="57" cy="6" r="11" fill="${sk}"/>`:''}<circle cx="0" cy="0" r="58" fill="${sk}"/>${face(who,mood,filter)}${hairFront(who)}${filter?`<path d="M70,-70 l4,10 l10,4 l-10,4 l-4,10 l-4,-10 l-10,-4 l10,-4Z" fill="#ffd34d"/><path d="M-78,-30 l3,7 l7,3 l-7,3 l-3,7 l-3,-7 l-7,-3 l7,-3Z" fill="#ffd34d"/>`:''}${hold(h,sk)}</g>`;
+}
+/* head-and-shoulders portrait that fills a box */
+function portrait(x,y,w,h,o){return `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="-100 -112 200 210" preserveAspectRatio="xMidYMid slice">${kid(o)}</svg>`;}
+function headIcon(who,mood,filter=false){return `<svg viewBox="-80 -95 160 160">${hairBack(who)}<circle cx="0" cy="0" r="58" fill="${SKIN[who]}"/>${face(who,mood,filter)}${hairFront(who)}</svg>`;}
+const headAt=(who,x,y,sz,mood='smile',filter=false)=>headIcon(who,mood,filter).replace('<svg',`<svg x="${x}" y="${y}" width="${sz}" height="${sz}"`);
+function phone(x,y,w,h,inner){const W=w-14,H=h-30;return `<g transform="translate(${x} ${y})"><rect width="${w}" height="${h}" rx="18" fill="#1d1d24"/><rect x="7" y="15" width="${W}" height="${H}" rx="8" fill="#fff"/><svg x="7" y="15" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${typeof inner==='function'?inner(W,H):inner}</svg><rect x="${w/2-14}" y="5" width="28" height="5" rx="2.5" fill="#444"/></g>`;}
+const post=(o,likes,extra='')=>(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(6,6,W-12,H-52,o)}<rect y="${H-44}" width="${W}" height="44" fill="#fff"/>${emo('❤️',26,H-22,24)}<text x="44" y="${H-21}" font-size="22" font-weight="800" fill="#d9384a" dominant-baseline="central">${likes}</text>${extra}`;
+function bubble(x,y,w,h,content,tx,ty,thought){
+  if(thought) return `<g><ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" fill="#fff" stroke="#333" stroke-width="3"/><circle cx="${tx}" cy="${ty}" r="7" fill="#fff" stroke="#333" stroke-width="2.5"/><circle cx="${(tx+x+w/2)/2}" cy="${(ty+y+h)/2}" r="11" fill="#fff" stroke="#333" stroke-width="2.5"/>${content}</g>`;
+  return `<g><path d="M${x+20},${y} h${w-40} q20,0 20,20 v${h-40} q0,20 -20,20 H${Math.min(x+w-20,tx+18)} L${tx},${ty} L${Math.max(x+20,tx-6)},${y+h} H${x+20} q-20,0 -20,-20 v-${h-40} q0,-20 20,-20Z" fill="#fff" stroke="#333" stroke-width="3"/>${content}</g>`;
+}
+/* backgrounds 800x500 */
+const BG={
+  park:`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="700" cy="80" r="44" fill="#ffd95a"/><rect y="330" width="800" height="170" fill="#8fd16a"/><rect x="80" y="170" width="26" height="180" fill="#8a5a33"/><circle cx="93" cy="150" r="80" fill="#5fae45"/><circle cx="40" cy="190" r="50" fill="#6cbd4f"/><circle cx="150" cy="185" r="55" fill="#6cbd4f"/>`,
+  play:`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="90" cy="80" r="40" fill="#ffd95a"/><rect y="340" width="800" height="160" fill="#8fd16a"/><path d="M520,110 L470,360 M520,110 L570,360 M740,110 L690,360 M740,110 L790,360 M515,110 L745,110" stroke="#c4553c" stroke-width="12" stroke-linecap="round"/><path d="M600,112 L600,290 M660,112 L660,290" stroke="#555" stroke-width="3"/><rect x="590" y="288" width="80" height="12" rx="4" fill="#3d6fa8"/><path d="M60,360 L200,200 L230,200 L230,360" fill="#f4c542" stroke="#c99a1e" stroke-width="5"/>`,
+  night:`<rect width="800" height="500" fill="#1f2a4d"/><rect y="410" width="800" height="90" fill="#2a2f45"/><rect x="560" y="60" width="170" height="140" rx="6" fill="#0e1530" stroke="#3b4a7a" stroke-width="8"/><circle cx="690" cy="105" r="22" fill="#f6e7a1"/><circle cx="600" cy="90" r="3" fill="#fff"/><circle cx="625" cy="150" r="2.5" fill="#fff"/><circle cx="700" cy="170" r="2" fill="#fff"/><rect x="0" y="330" width="520" height="130" rx="14" fill="#4a5d9a"/><rect x="20" y="300" width="150" height="60" rx="20" fill="#e8ecf8"/>`,
+  room:`<rect width="800" height="500" fill="#fbe7c6"/><rect y="410" width="800" height="90" fill="#d9b38c"/><rect x="560" y="60" width="170" height="140" rx="6" fill="#bfe6fb" stroke="#fff" stroke-width="8"/><circle cx="690" cy="105" r="22" fill="#ffd95a"/><rect x="40" y="250" width="110" height="160" fill="#c98f5e"/><rect x="50" y="265" width="90" height="10" fill="#a8743f"/><rect x="58" y="230" width="16" height="35" fill="#e63946"/><rect x="78" y="236" width="14" height="29" fill="#2a9d8f"/><rect x="96" y="226" width="18" height="39" fill="#457b9d"/>`,
+  mirror:`<rect width="800" height="500" fill="#fbe7c6"/><rect y="410" width="800" height="90" fill="#d9b38c"/><rect x="430" y="40" width="300" height="400" rx="150" fill="#dfeff5" stroke="#b98b4e" stroke-width="16"/>`
+};
+const scene=(inner,label='Bild')=>`<svg class="scene" viewBox="0 0 800 500" role="img" aria-label="${label}">${inner}</svg>`;
+const clock=(x,y,t)=>`<g transform="translate(${x} ${y})"><circle r="40" fill="#fff" stroke="#333" stroke-width="5"/><text y="2" font-size="24" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#333">${t}</text></g>`;
+
+/* ---------- words in pictures: headline, speech and thought bubbles ---------- */
+const FONT='font-family="ui-rounded, system-ui, -apple-system, sans-serif"';
+const tlen=t=>[...t].reduce((n,c)=>n+(c.codePointAt(0)>0x2000?1.7:1),0);
+function cap(t){const w=Math.round(tlen(t)*19.5+44);return `<g><rect x="14" y="12" rx="14" width="${w}" height="58" fill="#fff6c8" stroke="#2c2a1e" stroke-width="3"/><text x="${14+w/2}" y="42" font-size="30" font-weight="900" fill="#2c2a1e" text-anchor="middle" dominant-baseline="central" ${FONT}>${t}</text></g>`;}
+function say(x,y,t,tx,ty,o={}){const fs=o.fs||28;const w=o.w||Math.round(tlen(t)*fs*.6+(o.think?80:44));const h=o.h||(o.think?86:64);
+  return bubble(x,y,w,h,`<text x="${x+w/2}" y="${y+h/2+1}" font-size="${fs}" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#222" ${FONT}>${t}</text>`,tx,ty,o.think);}
+const think=(x,y,t,tx,ty,o={})=>say(x,y,t,tx,ty,{...o,think:true});
+/* a chat bubble with a small face in front, for messages on the phone or from far away */
+function msg(x,y,who,t,o={}){const fs=o.fs||26;const w=Math.round(tlen(t)*fs*.6+90);return `<g><rect x="${x}" y="${y}" width="${w}" height="62" rx="20" fill="#fff" stroke="#333" stroke-width="3"/>${headAt(who,x+6,y+5,52,'smile')}<text x="${x+66}" y="${y+32}" font-size="${fs}" font-weight="800" dominant-baseline="central" fill="#222" ${FONT}>${t}</text></g>`;}
+const tag=(x,y,t,fill='#fff')=>{const w=Math.round(tlen(t)*15+28);return `<g><rect x="${x-w/2}" y="${y-20}" width="${w}" height="40" rx="20" fill="${fill}" stroke="#333" stroke-width="2.5"/><text x="${x}" y="${y+1}" font-size="24" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#222" ${FONT}>${t}</text></g>`;};
+
+BG.school=`<rect width="800" height="500" fill="#f3ecdc"/><rect x="230" y="90" width="340" height="150" rx="8" fill="#2f5d46" stroke="#8a5a33" stroke-width="10"/><text x="400" y="168" font-size="46" fill="#e8f0e8" text-anchor="middle" dominant-baseline="central" ${FONT}>A B C</text><rect y="410" width="800" height="90" fill="#c9a77c"/>`;
+BG.yard=`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="700" cy="70" r="38" fill="#ffd95a"/><rect y="330" width="800" height="170" fill="#bdb6aa"/><rect x="0" y="250" width="800" height="90" fill="#d07a54"/><path d="M0,250 h800" stroke="#a85c3c" stroke-width="6"/>`;
+BG.party=BG.room+`<path d="M160,40 Q400,110 640,40" stroke="#555" stroke-width="2" fill="none"/>${[200,260,320,380,440,500,560,620].map((x,i)=>`<path d="M${x},${52+Math.sin(i)*6} l14,30 l14,-30Z" fill="${['#e63946','#f4a261','#2a9d8f','#9b5de5'][i%4]}"/>`).join('')}<ellipse cx="80" cy="120" rx="34" ry="42" fill="#e63946"/><ellipse cx="740" cy="130" rx="34" ry="42" fill="#2a9d8f"/><path d="M80,162 v80 M740,172 v80" stroke="#555" stroke-width="2"/>`;
+const cake=(x,y)=>`<g transform="translate(${x} ${y})"><rect x="-70" y="0" width="140" height="70" rx="10" fill="#f6a5c0"/><rect x="-70" y="0" width="140" height="18" rx="8" fill="#fff"/><rect x="-4" y="-34" width="8" height="34" fill="#9b5de5"/><path d="M0,-50 q8,10 0,16 q-8,-6 0,-16Z" fill="#ffb703"/></g>`;
+const bench=`<rect x="140" y="360" width="300" height="22" rx="6" fill="#8a5a33"/><rect x="160" y="380" width="14" height="50" fill="#6b4a2e"/><rect x="406" y="380" width="14" height="50" fill="#6b4a2e"/>`;
+
+/* ---------- Modul 2: more classmates, a teacher, chat screens, the sticker ---------- */
+Object.assign(SKIN,{noah:'#f3cfae',ben:'#f0c19c',leo:'#9a6440',tom:'#f5d3b5',ella:'#f6d6bd',finn:'#6e4528',teacher:'#efc4a0'});
+Object.assign(HAIR,{noah:'#6b3e1f',ben:'#b5451b',leo:'#141414',tom:'#8a5a33',ella:'#e07b2e',finn:'#1b1b1b',teacher:'#9a9a9a'});
+const _hb=hairBack,_hf=hairFront,_bd=body,_fc=face;
+hairBack=function(who){
+  if(who==='ella') return `<circle cx="-72" cy="14" r="24" fill="${HAIR.ella}"/><circle cx="72" cy="14" r="24" fill="${HAIR.ella}"/><path d="M-64,0 Q-76,-84 0,-80 Q76,-84 64,0Z" fill="${HAIR.ella}"/>`;
+  if(who==='teacher') return `<circle cx="0" cy="-78" r="24" fill="${HAIR.teacher}"/><path d="M-62,8 Q-72,-76 0,-72 Q72,-76 62,8Z" fill="${HAIR.teacher}"/>`;
+  return _hb(who);};
+hairFront=function(who){
+  const H=HAIR[who];
+  if(who==='noah') return `<path d="M-58,-14 Q-62,-70 0,-66 Q62,-70 58,-14 Q50,-40 30,-44 Q20,-30 10,-46 Q-5,-32 -18,-46 Q-30,-32 -42,-42 Q-52,-34 -58,-14Z" fill="${H}"/>`;
+  if(who==='ben') return `<path d="M-58,-16 L-62,-50 L-44,-60 L-40,-80 L-18,-66 L0,-86 L16,-66 L40,-80 L44,-60 L62,-50 L58,-16 Q40,-44 0,-44 Q-40,-44 -58,-16Z" fill="${H}"/>`;
+  if(who==='leo') return `<path d="M-57,-18 Q-58,-66 0,-62 Q58,-66 57,-18 Q30,-40 0,-40 Q-30,-40 -57,-18Z" fill="${H}"/>`;
+  if(who==='tom') return `<path d="M-58,-10 Q-64,-72 0,-66 Q64,-72 58,-10 Q48,-46 -20,-44 Q-40,-36 -58,-10Z" fill="${H}"/>`;
+  if(who==='finn'){let g='';for(let x=-48;x<=48;x+=16)g+=`<circle cx="${x}" cy="${-52+Math.abs(x)*0.3}" r="13" fill="${H}"/>`;return g;}
+  if(who==='ella') return `<path d="M-60,-12 Q-62,-72 0,-66 Q62,-72 60,-12 Q40,-40 0,-40 Q-40,-40 -60,-12Z" fill="${H}"/>`;
+  if(who==='teacher') return `<path d="M-58,-14 Q-56,-70 0,-64 Q56,-70 58,-14 Q30,-48 0,-46 Q-30,-48 -58,-14Z" fill="${H}"/>`;
+  return _hf(who);};
+const SHIRT={noah:'#f08a24',ben:'#2f5fa8',leo:'#7d8794',tom:'#3aa37a',ella:'#f2c14e',finn:'#e45b5b'};
+body=function(who){
+  const P='M-100,280 L-100,150 Q-98,88 -38,80 L38,80 Q98,88 100,150 L100,280Z';
+  if(who==='ben') return `<path d="${P}" fill="${SHIRT.ben}"/><text x="0" y="190" font-size="70" font-weight="900" fill="#fff" text-anchor="middle" ${FONT}>7</text>`;
+  if(who==='leo') return `<path d="${P}" fill="${SHIRT.leo}"/><path d="M-40,82 Q0,120 40,82" fill="none" stroke="#5d6672" stroke-width="6"/><rect x="-44" y="190" width="88" height="40" rx="10" fill="#6c7581"/>`;
+  if(who==='noah') return `<path d="${P}" fill="${SHIRT.noah}"/><text x="0" y="180" font-size="54" text-anchor="middle" fill="#fff" ${FONT}>♪</text>`;
+  if(SHIRT[who]) return `<path d="${P}" fill="${SHIRT[who]}"/>`;
+  if(who==='teacher') return `<path d="${P}" fill="#8a5ab0"/><path d="M-30,80 L0,150 L30,80Z" fill="#fff"/>`;
+  return _bd(who);};
+face=function(who,mood,filter){let g=_fc(who,mood,filter);
+  if(who==='noah'||who==='teacher') g+=`<g fill="none" stroke="#333" stroke-width="3.5"><circle cx="-22" cy="-4" r="15"/><circle cx="22" cy="-4" r="15"/><path d="M-7,-6 Q0,-11 7,-6"/></g>`;
+  return g;};
+
+const AYLA=(o={})=>kid({who:'ayla',...o}), NOAH=(o={})=>kid({who:'noah',...o,mood:o.mood||moodOf(ST.noah/2)}),
+      BEN=(o={})=>{const g=kid({who:'ben',...o});return o.flip?g.replace('<text x="0" y="190"','<text transform="scale(-1 1)" x="0" y="190"'):g;} /* keep the 7 readable when Ben faces left */, LEO=(o={})=>kid({who:'leo',...o}), MIA=(o={})=>kid({who:'mia',...o});
+const TEACH=(o={})=>kid({who:'teacher',s:1.05,...o}), MOM=(o={})=>kid({who:'adult',s:1.05,...o});
+
+/* the sticker: Noah's photo with a pig nose and pig ears */
+function pig(x,y,sz){const k=sz/160,cx=x+80*k,cy=y+95*k;
+  return `<g><path d="M${cx-48*k},${cy-44*k} l-14,-36 l34,16Z M${cx+48*k},${cy-44*k} l14,-36 l-34,16Z" transform="translate(0 0)" fill="#f7a1b8" stroke="#d06a86" stroke-width="2"/>${headAt('noah',x,y,sz,'amazed')}<ellipse cx="${cx}" cy="${cy+16*k}" rx="${22*k}" ry="${15*k}" fill="#f7a1b8" stroke="#d06a86" stroke-width="${Math.max(1.5,3*k)}"/><ellipse cx="${cx-7*k}" cy="${cy+16*k}" rx="${4*k}" ry="${6*k}" fill="#a8445f"/><ellipse cx="${cx+7*k}" cy="${cy+16*k}" rx="${4*k}" ry="${6*k}" fill="#a8445f"/></g>`;}
+const pigIcon=(sz=52)=>`<svg viewBox="-20 -20 200 200" width="${sz}" height="${sz}">${pig(0,10,160)}</svg>`;
+/* Noah's dance photo */
+const dancePhoto=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#e8f0ff"/>${portrait(x,y,w,h,{who:'noah',mood:'happy'})}${emo('🎵',x+w-22,y+24,Math.round(h/5))}`;
+
+/* chat screen: rows {who|av, t | sticker | photo, me, sys} */
+function chat(rows,o={}){return (W,H)=>{
+  let g=`<rect width="${W}" height="${H}" fill="#f4f7fb"/><rect width="${W}" height="46" fill="${o.col||'#3a7fc4'}"/><text x="${W/2}" y="24" font-size="21" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central" ${FONT}>${o.title||'👥 Klasse'}</text>`;
+  if(o.menu) g+=`<text x="${W-16}" y="24" font-size="28" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">⋮</text>`;
+  const hs=rows.map(r=>r.sticker||r.photo?118:58); let tot=hs.reduce((a,b)=>a+b,0), start=0;
+  while(tot>H-56&&start<rows.length-1){tot-=hs[start];start++;}
+  let y=54;
+  rows.slice(start).forEach((r,i)=>{const h=hs[start+i]-8;
+    if(r.sys){g+=`<rect x="20" y="${y+8}" width="${W-40}" height="${h-16}" rx="${(h-16)/2}" fill="#e3e7ee"/><text x="${W/2}" y="${y+h/2}" font-size="19" font-weight="800" fill="#556" text-anchor="middle" dominant-baseline="central" ${FONT}>${r.sys}</text>`;y+=h+8;return;}
+    const me=!!r.me, bx=me?W-12-(W-70):58, bw=W-70;
+    if(!me) g+=r.who?headAt(r.who,6,y+h-46,46,r.mood||'smile'):emo(r.av,29,y+h-23,30);
+    g+=`<rect x="${bx}" y="${y}" width="${bw}" height="${h}" rx="16" fill="${me?'#dcf5d2':'#fff'}" stroke="#cfd6e0" stroke-width="2"/>`;
+    if(r.sticker) g+=`<svg x="${bx+bw/2-54}" y="${y+2}" width="108" height="${h-4}" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`;
+    else if(r.photo) g+=dancePhoto(bx+8,y+6,bw-16,h-12);
+    else g+=`<text x="${bx+bw/2}" y="${y+h/2+1}" font-size="${r.fs||24}" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#222" ${FONT}>${r.t}</text>`;
+    if(r.fwd) g+=`<text x="${bx+bw-8}" y="${y+14}" font-size="16" text-anchor="end" ${FONT}>↪️</text>`;
+    y+=h+8;});
+  return g;};}
+
+BG.field=`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="90" cy="70" r="36" fill="#ffd95a"/><rect y="300" width="800" height="200" fill="#6cbd4f"/><path d="M0,400 H800" stroke="#fff" stroke-width="4" opacity=".7"/><g stroke="#fff" stroke-width="9" fill="none"><path d="M600,320 V180 H780 V320"/></g><path d="M600,180 L780,180 L780,320 L600,320Z" fill="none" stroke="#ddd" stroke-width="2" stroke-dasharray="6 6"/>`;
+const ball=(x,y,r=26)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#333" stroke-width="3"/><path d="M${x-r*.4},${y-r*.2} l${r*.4},-${r*.3} l${r*.4},${r*.3} l-${r*.15},${r*.45} h-${r*.5}Z" fill="#333"/>`;
+const bed=`<rect x="40" y="300" width="420" height="140" rx="16" fill="#5b79c9"/><rect x="40" y="280" width="120" height="70" rx="22" fill="#eef1fb"/><rect x="30" y="250" width="22" height="210" fill="#8a5a33"/>`;
+const chair=(x,y)=>`<rect x="${x}" y="${y}" width="90" height="16" rx="5" fill="#b07d3e"/><rect x="${x}" y="${y-90}" width="16" height="106" fill="#b07d3e"/><rect x="${x+74}" y="${y+16}" width="12" height="60" fill="#8a5a33"/><rect x="${x+4}" y="${y+16}" width="12" height="60" fill="#8a5a33"/>`;
+const roll=(x,y)=>emo('🙄',x,y,56);
+const arrowR=(x,y)=>emo('➡️',x,y,46);
+
+
+/* ---------- state ---------- */
+/* noah: how Noah feels (0-20, shown as 10 segments in half steps). ayla: Ayla's mood 0-3, rolls: eye-rolls she got for helping. kl: the six classmates, -1 laughs along, 0 watches, 1 helps. share: how often the sticker was sent on. */
+const REIHE=['mia','lena','leo','tom','ella','finn'], ORDER=[2,3,5,0,4,1];
+const START={noah:14,ayla:2,rolls:0,kl:[0,0,0,0,0,0],share:0,mom:false,teacher:false,sorry:false,group:false,day:0,log:[]};
+let ST=JSON.parse(JSON.stringify(START)), cur='start', last=null; const hist=[];
+const AMOOD=['sad','unsure','smile','happy'], aylaMood=()=>AMOOD[ST.ayla];
+const helpers=()=>ST.kl.filter(v=>v===1).length, laughers=()=>ST.kl.filter(v=>v===-1).length;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function flip(n,to){ // others follow the example: neutral classmates first, then those on the other side
+  for(const from of [0,-to]) for(const i of ORDER){ if(n<=0) return; if(ST.kl[i]===from){ST.kl[i]=to;n--;} } }
+function apply(e){
+  ST.noah=clamp(ST.noah+(e.noah||0),0,20); ST.share=Math.max(0,ST.share+(e.share||0));
+  if(e.lach) flip(e.lach,-1); if(e.hilf) flip(e.hilf,1);
+  ['mom','teacher','sorry','group'].forEach(k=>{if(e[k])ST[k]=true;});
+  // the price of helping lands on Ayla; it eases when others join in or an adult helps
+  if(e.mut){ST.ayla=Math.max(0,ST.ayla-1);ST.rolls++;} if(e.ay) ST.ayla=Math.min(3,ST.ayla+e.ay);
+}
+
+/* ---------- chat contents ---------- */
+const C0=[{who:'mia',t:'Hallo! 👋'},{who:'leo',t:'⚽ ?'},{who:'lena',t:'😊'}];
+const C1=[...C0,{who:'noah',photo:true},{who:'mia',t:'Cool! 🕺'}];
+const C2=[{who:'noah',photo:true},{who:'ben',sticker:true},{who:'leo',t:'😂😂😂'},{who:'tom',t:'🐷🐷'}];
+const CHATBIG=(rows,o)=>phone(430,80,270,410,chat(rows,o));
+const meChat=(rows)=>CHATBIG(rows,{title:'💬 Noah',col:'#4f9a3a'});
+
+/* ---------- screens ---------- */
+const S={
+ start:{type:'start',next:'d0'},
+ d0:{type:'day',day:0,next:'mo1'},
+ mo1:{type:'scene',draw:()=>BG.room+cap('Klassenchat')+AYLA({x:230,y:290,mood:'happy',hold:'phone'})+CHATBIG(C0)+tag(230,470,'👥 Klasse','#e9ecff'),next:'mo2'},
+ mo2:{type:'scene',draw:()=>BG.room+cap('Noah tanzt')+NOAH({x:230,y:290,mood:'happy',hold:'phone'})+emo('🎵',110,170,50)+emo('🎶',350,160,44)+CHATBIG(C1)+say(40,90,'Mein Tanz!',190,215),next:'mo3'},
+ mo3:{type:'scene',auto:{share:1},draw:()=>BG.room+cap('Ben macht einen Sticker')+BEN({x:230,y:290,mood:'cheeky',hold:'phone'})+phone(430,80,270,410,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${dancePhoto(40,14,W-80,130)}${emo('⬇️',W/2,172,40)}<svg x="${W/2-90}" y="196" width="180" height="176" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`)+think(30,90,'Lustig! 😂',200,215),next:'mo4'},
+ mo4:{type:'scene',auto:{lach:2,noah:-2},draw:()=>BG.room+cap('Alle lachen')+NOAH({x:230,y:290,mood:'sad',hold:'phone'})+CHATBIG(C2)+think(40,90,'Warum?',190,215),next:'mo5'},
+ mo5:{type:'sort',title:'Wie fühlt sich Noah?',items:()=>[
+    {av:headIcon('ben','cheeky'),tx:pigIcon(72),k:'n'},{av:headIcon('mia','smile'),tx:'Cool! 🕺',k:'y'},
+    {av:headIcon('leo','cheeky'),tx:'😂😂😂',k:'n'},{av:headIcon('lena','smile'),tx:'👍',k:'y'},
+    {av:headIcon('tom','cheeky'),tx:'🐷🐷',k:'n'},{av:headIcon('ella','smile'),tx:'💃 Ich auch!',k:'y'}],
+   opts:[{ic:headIcon('noah','happy')+'<i>😊</i>',bg:'#e6f4e2',k:'y',l:'Noah freut sich'},{ic:headIcon('noah','cry')+'<i>😢</i>',bg:'#e3ecfb',k:'n',l:'Noah ist traurig'}],next:'mo6'},
+ mo6:{type:'decide',who:'ayla',draw:()=>BG.room+cap('Was macht Ayla?')+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG(C2)+think(40,90,'Hmm …',190,215),
+  cards:[{ic:'😂',w:'Mitlachen',eff:{noah:-4,lach:2},res:()=>BG.room+cap('Noch mehr Lachen')+AYLA({x:230,y:290,mood:'cheeky',hold:'phone'})+CHATBIG([...C2,{who:'ayla',me:true,t:'😂'},{who:'finn',t:'😂🐷'}])+headAt('noah',40,90,110,'cry')+emo('💔',150,110,44),next:'d1'},
+         {ic:'🙈',w:'Nichts tun',eff:{noah:-2,lach:1},res:()=>BG.room+cap('Keiner sagt was')+AYLA({x:230,y:290,mood:'neutral'})+emo('🙈',360,200,64)+CHATBIG([...C2,{who:'finn',t:'😂🐷'}]),next:'d1'},
+         {ic:'💌',w:'Noah schreiben',eff:{noah:2,hilf:1},res:()=>BG.room+cap('Privat an Noah')+AYLA({x:230,y:290,mood:'happy',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Toller Tanz! 💛'},{who:'noah',t:'Danke 🙂'}]),next:'d1'},
+         {ic:'🛑',w:'„Stopp!“',eff:{noah:1,lach:1,mut:true},res:()=>BG.room+cap('🙄 🙄 🙄')+rollers(['ben','leo','finn'],24,86)+AYLA({x:230,y:290,mood:'sad',hold:'phone'})+emo('😟',330,200,50)+CHATBIG([{who:'ayla',me:true,t:'Stopp! 🛑'},{who:'ben',t:'🙄'},{who:'leo',t:'🙄'},{who:'finn',t:'🙄😂'}])+tag(230,470,'Mut 💪','#e6f4e2'),next:'d1'}]},
+
+ d1:{type:'day',day:1,next:'di1'},
+ di1:{type:'scene',draw:()=>BG.school+cap('Am nächsten Tag')+NOAH({x:170,y:300,s:.85})+BEN({x:480,y:300,s:.85,mood:'cheeky',hold:'phone'})+LEO({x:660,y:300,s:.85,mood:'cheeky',flip:true})+say(520,96,'Hihi 🐷',560,200),next:'di2'},
+ di2:{type:'scene',auto:{share:2,lach:1,noah:-1},draw:()=>BG.room+cap('Der Sticker wandert')+[60,300,540].map((x,i)=>phone(x,120,200,300,chat([{who:['leo','tom','finn'][i],sticker:true,fwd:true}],{title:'👥'})) ).join('')+arrowR(280,270)+arrowR(520,270)+tag(400,460,'📤 📤 📤','#fde3e3'),next:'di3'},
+ di3:{type:'decide',who:'ayla',draw:()=>BG.room+cap('Weiterschicken?')+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG([{who:'leo',sticker:true},{who:'leo',t:'Weiter! 📤'}],{title:'💬 Leo',col:'#7d8794'}),
+  cards:[{ic:'📤',w:'Weiterschicken',eff:{share:3,noah:-4,lach:1},res:()=>BG.room+cap('Noch weiter')+AYLA({x:230,y:290,mood:'neutral',hold:'phone'})+[440,560,680].map((x,i)=>phone(x-50,140+i*20,110,170,chat([{who:'ayla',sticker:true,fwd:true}],{title:'👥'}))).join('')+tag(560,90,'📤 +3','#fde3e3'),next:'di4'},
+         {ic:'🚫',w:'Nicht weiter',eff:{},res:()=>BG.room+cap('Bleibt bei mir')+AYLA({x:230,y:290,mood:'neutral',hold:'phone'})+`<svg x="470" y="110" width="220" height="220" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`+emo('🚫',580,220,230),next:'di4'},
+         {ic:'💬',w:'„Alles okay?“',eff:{noah:2,hilf:1},res:()=>BG.room+cap('Ayla fragt nach')+AYLA({x:230,y:290,mood:'smile',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Alles okay? 💛'},{who:'noah',t:'Nein 😢',mood:'sad'},{who:'ayla',me:true,t:'Ich bin da 🤝'}]),next:'di4'}]},
+ di4:{type:'scene',draw:()=>BG.night+cap('Noah liest alles')+NOAH({x:250,y:290,hold:'phone'})+CHATBIG([...C2,{who:'finn',sticker:true,fwd:true},{who:'tom',t:'😂😂'}])+think(40,90,'Alle?',200,215),next:'di5'},
+ di5:{type:'decide',who:'noah',draw:()=>BG.night+cap('Was macht Noah?')+NOAH({x:250,y:290,hold:'phone'})+CHATBIG([...C2,{who:'finn',sticker:true,fwd:true}]),
+  cards:[{ic:'😡',w:'Zurückschreiben',eff:{noah:-2,lach:1},res:()=>BG.night+cap('Noch schlimmer')+NOAH({x:250,y:290,mood:'cry',hold:'phone'})+CHATBIG([{who:'ben',sticker:true},{who:'noah',me:true,t:'😡😡😡'},{who:'ben',t:'😂😂'},{who:'leo',t:'🐷'}]),next:'d2'},
+         {ic:'🚪',w:'Chat verlassen',eff:{noah:-2},res:()=>BG.night+cap('Der Sticker bleibt')+NOAH({x:250,y:290,mood:'sad'})+CHATBIG([...C2,{sys:'🚪 Noah ist weg'},{who:'ben',t:'😂'}]),next:'d2'},
+         {ic:'👩📱',w:'Mama zeigen',eff:{noah:2,mom:true},res:()=>BG.room+cap('Mama hilft')+MOM({x:560,y:230,mood:'smile',flip:true})+NOAH({x:260,y:300,mood:'smile',hold:'phone'})+say(420,40,'Gut, dass du es zeigst!',560,140,{fs:24}),next:'d2'}]},
+
+ d2:{type:'day',day:2,next:'mi1'},
+ mi1:{type:'scene',auto:{noah:-1},draw:()=>BG.room+cap('Neue Gruppe')+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+phone(430,80,270,410,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${headAt('ben',W/2-55,30,110,'cheeky')}<text x="${W/2}" y="185" font-size="30" font-weight="900" text-anchor="middle" ${FONT}>👥 ohne</text>${headAt('noah',W/2-40,205,80,'neutral')}<line x1="${W/2-44}" y1="290" x2="${W/2+44}" y2="205" stroke="#d9384a" stroke-width="9" stroke-linecap="round"/>${emo('✅',W/2-60,338,52)}${emo('❌',W/2+60,338,52)}`)+think(40,90,'Hmm …',190,215),next:'mi2'},
+ mi2:{type:'decide',who:'ayla',draw:()=>S.mi1.draw().replace(cap('Neue Gruppe'),cap('Beitreten?')),
+  cards:[{ic:'✅👥',w:'Beitreten',eff:{noah:-2,lach:1,group:true},res:()=>BG.room+cap('In der Gruppe')+AYLA({x:230,y:290,mood:'neutral',hold:'phone'})+CHATBIG([{who:'ben',sticker:true},{who:'tom',t:'😂'},{who:'finn',t:'🐷🐷'}],{title:'👥 ohne Noah',col:'#b5451b'}),next:'mi3'},
+         {ic:'❌',w:'Nein',eff:{noah:1,hilf:1},res:()=>BG.room+cap('Nein danke!')+AYLA({x:300,y:290,mood:'smile',hold:'phone'})+emo('✋',560,250,150),next:'mi4'},
+         {ic:'👩‍🏫',w:'Lehrerin zeigen',eff:{noah:2,hilf:2,teacher:true,ay:1},res:()=>teacherHelp('Danke, Ayla!'),next:'mi4'}]},
+ mi3:{type:'decide',who:'ayla',draw:()=>BG.room+cap('Was jetzt?')+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG([{who:'ben',sticker:true},{who:'tom',t:'😂'},{who:'finn',t:'🐷🐷'}],{title:'👥 ohne Noah',col:'#b5451b'}),
+  cards:[{ic:'😂',w:'Mitlachen',eff:{noah:-4,lach:1,share:1},res:()=>BG.room+cap('Alle lachen')+AYLA({x:230,y:290,mood:'cheeky',hold:'phone'})+CHATBIG([{who:'ben',sticker:true},{who:'tom',t:'😂'},{who:'ayla',me:true,t:'😂😂'}],{title:'👥 ohne Noah',col:'#b5451b'}),next:'mi4'},
+         {ic:'🚪',w:'Austreten',eff:{noah:1,hilf:1,mut:true},res:()=>BG.room+cap('Ayla geht raus')+rollers(['ben','tom','finn'],24,86)+AYLA({x:230,y:290,mood:'sad',hold:'phone'})+emo('😟',330,200,50)+CHATBIG([{sys:'🚪 Ayla ist weg'},{who:'ben',t:'🙄'},{who:'tom',t:'🙄😂'},{who:'finn',t:'Tschüss! 🙄'}],{title:'👥 ohne Noah',col:'#b5451b'})+tag(230,470,'Mut 💪','#e6f4e2'),next:'mi4'},
+         {ic:'👩‍🏫',w:'Lehrerin zeigen',eff:{noah:2,hilf:2,teacher:true,ay:1},res:()=>teacherHelp('Danke, Ayla!'),next:'mi4'}]},
+ mi4:{type:'feel',who:'ayla',draw:()=>BG.room+cap('Wie fühlt sich Ayla?')+AYLA({x:400,y:290,mood:aylaMood()}),next:'d3'},
+
+ d3:{type:'day',day:3,next:'do1'},
+ do1:{type:'scene',auto:{noah:-1},draw:()=>pause()+cap('Pause')+say(470,60,'Guck mal! 😂',560,170),next:'do2'},
+ do2:{type:'sort',title:'Wer fühlt was?',items:()=>[
+    {av:headIcon('noah','sad'),tx:'Noah',k:'t'},{av:headIcon('ben','cheeky'),tx:'Ben',k:'l'},
+    {av:headIcon('mia','unsure'),tx:'Mia',k:'u'},{av:headIcon('leo','cheeky'),tx:'Leo',k:'lu'}],
+   opts:[{ic:'😢',k:'t',l:'traurig'},{ic:'😂',k:'l',l:'lacht'},{ic:'😟',k:'u',l:'unsicher'}],next:'do3'},
+ do3:{type:'decide',who:'ayla',draw:()=>pause()+AYLA({x:400,y:400,s:.6,mood:'unsure'})+cap('Wohin geht Ayla?'),
+  cards:[{ic:'😂📱',w:'Dazugehen',eff:{noah:-4,lach:1},res:()=>BG.yard+bench+NOAH({x:220,y:300,s:.7,mood:'cry'})+BEN({x:500,y:270,s:.7,mood:'cheeky',hold:'phone'})+AYLA({x:620,y:270,s:.7,mood:'cheeky',flip:true})+LEO({x:730,y:270,s:.7,mood:'cheeky',flip:true})+cap('Noah ist allein'),next:'d4'},
+         {ic:'🚶‍♀️',w:'Zu Noah',eff:{noah:2,hilf:1},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'smile'})+AYLA({x:380,y:270,s:.75,mood:'happy',flip:true})+say(260,70,'Fußball? ⚽',360,170)+cap('Ayla setzt sich dazu'),next:'do4'},
+         {ic:'🤝',w:'Mit Mia zu Noah',eff:{noah:3,hilf:2,ay:1},res:()=>BG.yard+bench+NOAH({x:250,y:270,s:.75,mood:'happy'})+AYLA({x:410,y:270,s:.75,mood:'happy',flip:true})+MIA({x:560,y:270,s:.75,mood:'happy',flip:true})+tag(400,470,'Zusammen 🤝','#e6f4e2')+cap('Zu dritt'),next:'do4'}]},
+ do4:{type:'decide',who:'ayla',draw:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'unsure'})+AYLA({x:380,y:270,s:.75,mood:'unsure',flip:true})+BEN({x:640,y:270,s:.8,mood:'cheeky',flip:true,hold:'phone'})+roll(560,110)+cap('Ben kommt'),
+  cards:[{ic:'🚶‍♀️',w:'Weggehen',eff:{noah:-2},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'sad'})+BEN({x:480,y:270,s:.8,mood:'cheeky',flip:true,hold:'phone'})+AYLA({x:740,y:270,s:.55,mood:'neutral'})+cap('Noah bleibt mit Ben'),next:'d4'},
+         {ic:'✋',w:'„Lass ihn!“',eff:{noah:1,lach:1,mut:true},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'unsure'})+AYLA({x:400,y:270,s:.75,mood:'sad',flip:true})+say(270,80,'Lass ihn! ✋',380,175)+BEN({x:640,y:270,s:.8,mood:'cheeky',flip:true})+LEO({x:750,y:290,s:.6,mood:'cheeky',flip:true})+rollers(['ben','leo','tom'],540,86)+cap('🙄 🙄 🙄')+tag(400,470,'Mut 💪','#e6f4e2'),next:'d4'},
+         {ic:'👩‍🏫',w:'Lehrerin holen',eff:{noah:2,hilf:2,teacher:true,ay:1},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'smile'})+AYLA({x:380,y:270,s:.75,mood:'smile',flip:true})+TEACH({x:560,y:230,s:.9,mood:'neutral',flip:true})+BEN({x:720,y:280,s:.7,mood:'unsure',flip:true})+say(440,40,'Stopp, Ben!',520,130)+cap('Hilfe holen'),next:'d4'}]},
+
+ d4:{type:'day',day:4,next:'fr1'},
+ fr1:{type:'scene',auto:{noah:-1},draw:()=>BG.room+bed+headAt('noah',70,190,140,'sad')+MOM({x:600,y:230,mood:'unsure',flip:true})+say(420,40,'Schule? 🏫',580,130)+think(180,60,'Nein! 🤢',150,200)+cap('Bauchweh'),next:'fr2'},
+ fr2:{type:'decide',who:'noah',draw:()=>S.fr1.draw().replace(cap('Bauchweh'),cap('Was sagt Noah?')),
+  cards:[{ic:'🤐',w:'Nichts sagen',eff:{noah:-4},res:()=>BG.room+bed+headAt('noah',70,190,140,'cry')+emo('🤐',260,200,60)+cap('Niemand weiß es'),next:'fr3'},
+         {ic:'📱👩',w:'Mama zeigen',eff:{noah:2,mom:true},res:()=>BG.room+MOM({x:560,y:230,mood:'smile',flip:true})+NOAH({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,'Wir helfen dir!',560,140)+cap('Mama weiß es'),next:'fr3'},
+         {ic:'👩‍🏫✉️',w:'Lehrerin schreiben',eff:{noah:2,teacher:true},res:()=>BG.room+NOAH({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,80,270,410,chat([{who:'noah',me:true,t:'Hilfe! 🐷😢'},{who:'teacher',t:'Ich helfe! 💛'}],{title:'💬 Lehrerin',col:'#8a5ab0'}))+cap('Lehrerin weiß es'),next:'fr3'}]},
+ fr3:{type:'melden',next:'fr4'},
+ fr4:{type:'decide',who:'ayla',draw:()=>BG.school+chair(180,400)+emo('❓',225,300,60)+AYLA({x:560,y:300,mood:'unsure'})+think(400,100,'Noah?',520,220)+cap('Noah fehlt'),
+  cards:[{ic:'🙈',w:'Nichts tun',eff:{noah:-2},res:()=>BG.school+chair(180,400)+AYLA({x:560,y:300,mood:'neutral'})+emo('🙈',680,190,60)+cap('Noah bleibt allein'),next:'d5'},
+         {ic:'💌',w:'„Ich helfe dir“',eff:{noah:2,hilf:1,ay:1},res:()=>BG.room+AYLA({x:230,y:290,mood:'smile',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Ich helfe dir 🤝'},{who:'noah',t:'💛'}]),next:'d5'},
+         {ic:'🆘',w:'Hilfe zeigen',eff:{noah:2,hilf:1},res:()=>BG.room+AYLA({x:230,y:290,mood:'smile',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Hilfe: 🆘'},{who:'ayla',me:true,t:'👩 Mama'},{who:'ayla',me:true,t:'👩‍🏫 Lehrerin'},{who:'ayla',me:true,t:'💬 116 111'}])+cap('Hier gibt es Hilfe'),next:'d5'}]},
+
+ d5:{type:'day',day:5,next:'sa1'},
+ sa1:{type:'scene',draw:()=>BG.field+BEN({x:300,y:270,s:.8,mood:'unsure'})+LEO({x:470,y:270,s:.8,mood:'smile',flip:true})+ball(400,450)+`<rect x="580" y="250" width="110" height="200" rx="20" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="12 10"/>`+emo('❓',635,350,60)+think(80,70,'Wo ist Noah?',260,180)+cap('Fußball'),next:'sa2'},
+ sa2:{type:'decide',who:'ben',draw:()=>S.sa1.draw().replace(cap('Fußball'),cap('Was macht Ben?')),
+  cards:[{ic:'📤🐷',w:'Weitermachen',eff:{noah:-4,lach:1,share:2},res:()=>BG.field+BEN({x:250,y:290,mood:'cheeky',hold:'phone'})+CHATBIG([{who:'ben',me:true,sticker:true},{who:'tom',t:'😂'}])+cap('Noch ein Sticker'),next:'d6'},
+         {ic:'🗑️',w:'Sticker löschen',eff:{noah:1},res:()=>BG.field+BEN({x:250,y:290,mood:'neutral',hold:'phone'})+`<svg x="470" y="120" width="180" height="180" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`+emo('➡️',560,330,50)+emo('🗑️',560,420,80)+cap('Gelöscht'),next:'d6'},
+         {ic:'🙏',w:'Entschuldigen',eff:{noah:3,hilf:1,sorry:true},res:()=>BG.field+BEN({x:250,y:290,mood:'smile',hold:'phone'})+CHATBIG([{who:'ben',me:true,t:'Sorry, Noah! 🙏'},{who:'noah',t:'🙂 Okay'}],{title:'💬 Noah',col:'#2f5fa8'})+cap('Ben sagt Sorry'),next:'d6'}]},
+
+ d6:{type:'day',day:6,next:'so1'},
+ so1:{type:'scene',auto:{noah:-1},draw:()=>BG.night+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG([{who:'tom',sticker:true,fwd:true},{who:'finn',t:'😂'}])+cap('Schon wieder!'),next:'so2'},
+ so2:{type:'decide',who:'ayla',draw:()=>S.so1.draw().replace(cap('Schon wieder!'),cap('Was macht Ayla?')),
+  cards:[{ic:'🙈',w:'Nichts tun',eff:{noah:-2,lach:1},res:()=>BG.night+AYLA({x:230,y:290,mood:'neutral'})+emo('🙈',360,200,64)+CHATBIG([{who:'tom',sticker:true},{who:'finn',t:'😂'},{who:'leo',t:'😂😂'}])+cap('Es geht weiter'),next:'end'},
+         {ic:'🛑',w:'„Stopp!“',eff:()=>ST.teacher?{noah:3,hilf:3,ay:1}:{noah:1,lach:1,mut:true},res:()=>ST.teacher?
+            BG.night+AYLA({x:230,y:290,mood:'happy',hold:'phone'})+CHATBIG([{who:'tom',sticker:true},{who:'ayla',me:true,t:'Stopp! 🛑'},{who:'mia',t:'Stopp! 👍'},{who:'leo',t:'👍'},{who:'ella',t:'🛑'}])+cap('Alle machen mit')
+           :BG.night+rollers(['tom','leo','finn'],24,86)+AYLA({x:230,y:290,mood:'sad',hold:'phone'})+emo('😟',330,200,50)+CHATBIG([{who:'ayla',me:true,t:'Stopp! 🛑'},{who:'tom',t:'🙄'},{who:'leo',t:'🙄😂'},{who:'finn',t:'🙄'}])+cap('🙄 🙄 🙄')+tag(230,470,'Mut 💪','#e6f4e2'),next:'end'},
+         {ic:'👩👩‍🏫',w:'Erwachsene holen',eff:{noah:2,hilf:2,teacher:true,ay:1},res:()=>BG.room+MOM({x:560,y:230,mood:'smile',flip:true})+AYLA({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,'Morgen zur Lehrerin!',560,140,{fs:24})+cap('Mama hilft'),next:'end'}]},
+
+ end:{type:'scene',ending:true,draw:()=>{const n=ST.noah,h=helpers();
+   if(n>=14&&h>=4) return BG.yard+NOAH({x:400,y:250,s:.8,mood:'happy'})+emo('🎵',300,120,50)+emo('🎶',500,110,46)+AYLA({x:240,y:270,s:.7,mood:'happy'})+MIA({x:560,y:270,s:.7,mood:'happy',flip:true})+(ST.sorry?BEN({x:700,y:280,s:.65,mood:'smile',flip:true})+say(600,90,'Sorry!',690,190):'')+cap('Zusammen stark')+emo('🌈',735,60,80);
+   if(n>=8) return BG.school+TEACH({x:560,y:230,mood:'smile',flip:true})+NOAH({x:260,y:300,mood:'smile'})+say(380,40,'Wir passen auf!',540,140)+cap('Es wird besser')+emo('🌤️',735,60,80);
+   return BG.night+NOAH({x:300,y:290,mood:'cry',hold:'phone'})+`<rect x="470" y="240" width="210" height="76" rx="38" fill="#fff"/>`+emo('📤',515,278,40)+`<text x="550" y="280" font-size="40" font-weight="900" fill="#d9384a" dominant-baseline="central" ${FONT}>${ST.share}</text>`+cap('Noah ist allein')+emo('🌧️',735,60,80);},next:'review'},
+ review:{type:'review'}
+};
+function rollers(list,x,y){return list.map((w,i)=>headAt(w,x+i*78,y,70,'cheeky')+emo('🙄',x+i*78+58,y+58,34)).join('');} // classmates rolling their eyes at Ayla
+function teacherHelp(t){return BG.school+TEACH({x:560,y:230,mood:'smile',flip:true})+AYLA({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,t,560,140)+cap('Hilfe holen');}
+function pause(){return BG.yard+bench+NOAH({x:220,y:300,s:.7,mood:'sad'})+kid({who:'tom',x:470,y:270,s:.7,mood:'cheeky'})+BEN({x:590,y:270,s:.7,mood:'cheeky',hold:'phone'})+LEO({x:710,y:270,s:.7,mood:'cheeky',flip:true});}
+
+/* ---------- top bar ---------- */
+const $=id=>document.getElementById(id);
+const arrow=d=>d>0?'⬆️':d<0?'⬇️':'';
+const NAMES={ayla:'Ayla',noah:'Noah',ben:'Ben'};
+function drawTop(s){
+  $('week').innerHTML=DAYS.map((d,i)=>`<span class="${i===ST.day&&s.type!=='start'&&s.type!=='review'?'now':''} ${i<ST.day||s.type==='review'?'done':''}">${d}</span>`).join('');
+  const t=$('turn');
+  // on Ayla's turns her own pill (mood + eye-rolls) is the turn badge
+  $('ayla').className='pill ayla'+(s.who==='ayla'?' now'+(s.type==='decide'?' pulse':''):'');
+  if(s.who&&s.who!=='ayla'){t.hidden=false;t.className='turn '+s.who+(s.type==='decide'?' pulse':'');t.innerHTML=headIcon(s.who,s.who==='ayla'?aylaMood():'smile')+`<span>${NAMES[s.who]}</span>`;}
+  else t.hidden=true;
+  const d=last&&cur===last.at?last.d:{};
+  const on=ST.noah, col=on>=14?'#3f9b4a':on>=8?'#e0a526':'#d14b3c';
+  const seg=i=>on>=2*i+2?`background:${col}`:on===2*i+1?`background:linear-gradient(0deg,${col} 50%,#e6dcc0 50%)`:''; // half steps
+  $('meter').innerHTML=headIcon('noah',moodOf(ST.noah/2)).replace('<svg','<svg class="face"')+`<div class="bar" aria-label="Noah ${ST.noah/2} von 10">${Array.from({length:10},(_,i)=>`<i style="${seg(i)}"></i>`).join('')}</div><span class="delta">${arrow(d.noah)}</span>`;
+  $('klasse').innerHTML=REIHE.map((w,i)=>{const v=ST.kl[i],ch=d.kl&&d.kl[i]!==v;
+    return `<span class="kf ${v<0?'l':v>0?'h':'n'}${ch?' ch':''}">${headIcon(w,v<0?'cheeky':v>0?'smile':'neutral')}${v<0?'<b>😂</b>':v>0?'<b>🤝</b>':''}</span>`;}).join('');
+  $('ayla').innerHTML=headIcon('ayla',aylaMood())+(ST.rolls?`<span>🙄${ST.rolls}</span>`:'')+`<span class="ar">${arrow(d.ayla)}</span>`;
+  $('share').innerHTML=`<span>📤</span><span>${ST.share}</span><span class="ar">${arrow(d.share)}</span>`;
+}
+
+/* ---------- flow ---------- */
+function snapshot(){return {cur,st:JSON.parse(JSON.stringify(ST)),last};}
+const snap=()=>({noah:ST.noah,ayla:ST.ayla,rolls:ST.rolls,h:helpers(),l:laughers(),share:ST.share,kl:ST.kl.slice()});
+function go(id){hist.push(snapshot());const b=snap();cur=id;enter(b);render();}
+function back(){const h=hist.pop();if(!h)return;cur=h.cur;ST=h.st;last=h.last;render();}
+function restart(){hist.length=0;ST=JSON.parse(JSON.stringify(START));cur='start';last=null;render();}
+function delta(b){return {noah:ST.noah-b.noah,share:ST.share-b.share,ayla:ST.ayla-b.ayla,kl:b.kl};}
+function enter(b){const s=S[cur];
+  if(s.type==='day'){ if(s.day>0) ST.log[s.day-1]=snap(); ST.day=s.day;
+    // a new day: while three or more classmates still laugh along, the sticker keeps hurting
+    if(s.day>0&&laughers()>=3){ST.noah=clamp(ST.noah-1,0,20);last={at:cur,d:delta(b)};} }
+  if(s.auto){apply(s.auto);last={at:cur,d:delta(b)};}
+  if(s.ending) ST.log[6]=snap();
+}
+function choose(c,k){
+  hist.push(snapshot());
+  const rid='r_'+cur+'_'+k, b=snap();
+  apply(typeof c.eff==='function'?c.eff():c.eff);
+  S[rid]={type:'scene',draw:c.res,next:c.next};cur=rid;
+  last={at:rid,d:delta(b)};
+  render();
+}
+function navBar(nextId,middle){
+  const n=document.createElement('div');n.className='nav';
+  const b=document.createElement('button');b.className='arrow back';b.textContent='◀';b.setAttribute('aria-label','Zurück');b.disabled=!hist.length;b.onclick=back;
+  const f=document.createElement('button');f.className='arrow';f.textContent='▶';f.setAttribute('aria-label','Weiter');if(nextId)f.onclick=()=>go(nextId);else f.disabled=true;
+  let m=middle; if(!m){m=document.createElement('button');m.className='restart';m.textContent='⟲';m.setAttribute('aria-label','Von vorn');m.onclick=restart;}
+  n.append(b,m,f);return n;
+}
+function feelRow(){const r=document.createElement('div');r.className='feel';['😊','🙂','😐','☹️','😢','😨'].forEach(e=>{const b=document.createElement('button');b.textContent=e;b.setAttribute('aria-pressed','false');b.onclick=()=>{r.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');};r.appendChild(b);});return r;}
+
+/* report and block: tap ⋮, then find the three right buttons */
+function meldenScene(open){
+  const items=[{k:'shot',ic:'📸',w:'Foto für Mama',ok:1},{k:'flag',ic:'🚩',w:'Melden',ok:1},{k:'block',ic:'⛔',w:'Blockieren',ok:1},{k:'fwd',ic:'📤',w:'Weiterschicken',ok:0}];
+  let g=BG.room+cap('Melden und blockieren')+NOAH({x:200,y:300,mood:'unsure',hold:'phone'})+MOM({x:330,y:250,s:.7,mood:'smile'});
+  g+=phone(430,80,300,410,chat([{who:'ben',sticker:true},{who:'leo',t:'😂😂'}],{menu:true}));
+  g+=`<rect class="hot" data-k="menu" x="676" y="90" width="58" height="58" fill="rgba(0,0,0,0)" style="cursor:pointer"/>`;
+  if(!open) g+=`<circle cx="707" cy="119" r="30" fill="none" stroke="#ffb703" stroke-width="5"><animate attributeName="r" values="24;32;24" dur="1.4s" repeatCount="indefinite"/></circle>`;
+  if(open){g+=`<rect x="446" y="146" width="270" height="${items.length*78+16}" rx="16" fill="#fff" stroke="#333" stroke-width="3"/>`;
+    items.forEach((it,i)=>{const y=156+i*78;g+=`<g class="hot" data-k="${it.k}" data-ok="${it.ok}" style="cursor:pointer"><rect class="mbtn" x="456" y="${y}" width="250" height="66" rx="12" fill="#f3f5f9" stroke="#cfd6e0" stroke-width="2"/>${emo(it.ic,492,y+33,36)}<text x="522" y="${y+34}" font-size="20" font-weight="800" dominant-baseline="central" ${FONT}>${it.w}</text></g>`;});}
+  return g;}
+
+function render(){
+  const s=S[cur], st=$('stage'), bt=$('bottom');
+  st.innerHTML='';bt.innerHTML='';drawTop(s);
+  if(s.type==='start'){
+    st.innerHTML=`<div class="startbox"><svg viewBox="0 0 800 330">${BG.room.replace('height="500"','height="330"')}${AYLA({x:230,y:180,s:.8,mood:'happy'})}${NOAH({x:400,y:180,s:.8,mood:'happy'})}${BEN({x:570,y:180,s:.8,mood:'cheeky',flip:true})}</svg><h1>Der Sticker</h1><div class="pair" aria-label="Zu zweit spielen">🧒🧒 📱</div><p class="small">Für die Lehrkraft: Eine Woche im Klassenchat, 9 bis 11 Entscheidungen und 3 Aufgaben. Partnerarbeit: ein iPad pro Paar. Das Gesicht oben zeigt, aus wessen Sicht das Paar entscheidet (meist Ayla, zweimal Noah, einmal Ben). Oben sieht man, wie es Noah geht, was die Klasse macht (rot: lacht mit, grün: hilft) und wie oft der Sticker weitergeschickt wurde. Lachen morgens noch drei oder mehr mit, sinkt Noahs Balken (🌥️). Aylas Gesicht oben zeigt, wie es ihr geht; 🙄 zählt, wie oft sie für mutiges Helfen ausgelacht wurde. Hilfe von anderen oder von Erwachsenen macht sie wieder froh. Das Spiel speichert nichts.</p></div>`;
+    const p=document.createElement('button');p.className='arrow';p.style.width='140px';p.textContent='▶';p.setAttribute('aria-label','Start');p.onclick=()=>go('d0');bt.appendChild(p);return;}
+  if(s.type==='day'){
+    const hurt=last&&last.at===cur; // the sticker still hurts today
+    st.innerHTML=`<div class="daycard"><span class="sun">${hurt?'🌥️':s.day===6?'☀️🌈':'☀️'}</span><span class="d">${DAYS[s.day]}</span><span class="full">${DAYFULL[s.day]}</span>${hurt?`<span class="press" aria-label="Noah geht es schlechter">${headIcon('noah','sad')}<span>🐷😂 ⬇️</span></span>`:''}</div>`;
+    bt.appendChild(navBar(s.next));return;}
+  if(s.type==='scene'){st.innerHTML=scene(s.draw());bt.appendChild(navBar(s.next));return;}
+  if(s.type==='feel'){st.innerHTML=scene(s.draw());bt.appendChild(navBar(s.next,feelRow()));return;}
+  if(s.type==='decide'){
+    st.innerHTML=scene(s.draw());
+    const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;bk.disabled=!hist.length;
+    const c=document.createElement('div');c.className='cards';
+    s.cards.forEach((cd,k)=>{const b=document.createElement('button');b.className='card';b.innerHTML=`<span class="ic" aria-hidden="true">${cd.ic}</span><span class="w">${cd.w}</span>`;b.onclick=()=>choose(cd,k);c.appendChild(b);});
+    bt.append(bk,c);return;}
+  if(s.type==='melden'){
+    let open=false;const found=new Set();
+    const cnt=document.createElement('span');cnt.className='found';
+    const upd=()=>{cnt.textContent='🔍 '+[0,1,2].map(i=>i<found.size?'🟡':'⚪').join('');};
+    const draw=()=>{st.innerHTML=scene(meldenScene(open));
+      found.forEach(k=>{const r=st.querySelector(`g[data-k="${k}"] .mbtn`);if(r){r.setAttribute('fill','#fff3c4');r.setAttribute('stroke','#ffb703');r.setAttribute('stroke-width','5');}});
+      st.querySelectorAll('.hot').forEach(el=>el.addEventListener('click',()=>{const k=el.dataset.k;
+        if(k==='menu'){open=true;draw();return;}
+        if(el.dataset.ok==='1'){found.add(k);upd();draw();}
+        else{const r=el.querySelector('.mbtn');r.setAttribute('fill','#fde3e3');r.setAttribute('stroke','#d9384a');el.classList.remove('no');void el.getBoundingClientRect();el.classList.add('no');}}));};
+    draw();upd();bt.appendChild(navBar(s.next,cnt));return;}
+  if(s.type==='sort'){
+    const box=document.createElement('div');box.className='sortbox';
+    box.innerHTML=`<div class="htitle">${s.title}</div>`;
+    const wrap=document.createElement('div');wrap.className='sortlist';
+    s.items().forEach(c=>{const d=document.createElement('div');d.className='cmt';
+      d.innerHTML=`<span class="av">${c.av}</span><span class="tx">${c.tx}</span><span class="bt">${s.opts.map(o=>`<button aria-label="${o.l}" data-k="${o.k}"${o.bg?` style="background:${o.bg}"`:''}>${o.ic}</button>`).join('')}</span>`;
+      d.querySelectorAll('.bt button').forEach(b=>b.onclick=()=>{if(c.k.includes(b.dataset.k)){d.classList.remove('no');d.classList.add('ok');d.querySelector('.bt').innerHTML=`<span class="pick">${b.innerHTML}</span>`;}else{d.classList.remove('no');void d.offsetWidth;d.classList.add('no');}});
+      wrap.appendChild(d);});
+    box.appendChild(wrap);st.appendChild(box);bt.appendChild(navBar(s.next));return;}
+  if(s.type==='review'){
+    const maxS=Math.max(1,...ST.log.map(l=>l?l.share:0));
+    const col=h=>h>=14?'var(--good)':h>=8?'#e0a526':'var(--bad)';
+    const row=(lab,fn)=>`<span class="lab">${lab}</span>`+DAYS.map((d,i)=>{const l=ST.log[i];return l?fn(l):'<span></span>';}).join('');
+    let h=`<div class="review" role="img" aria-label="Noahs Woche"><span></span>${DAYS.map(d=>`<span class="dn">${d}</span>`).join('')}`;
+    h+=row(headIcon('noah','smile').replace('<svg','<svg style="width:44px;height:44px"'),l=>`<span class="fc">${headIcon('noah',moodOf(l.noah/2))}</span>`);
+    h+=row(headIcon('ayla','smile').replace('<svg','<svg style="width:44px;height:44px"'),l=>`<span class="fc">${headIcon('ayla',AMOOD[l.ayla])}${l.rolls?`<small>🙄${l.rolls}</small>`:''}</span>`);
+    h+=row('📶',l=>`<span class="lk"><b style="height:${Math.max(4,l.noah/20*76)}px;background:${col(l.noah)}"></b></span>`);
+    h+=row('🤝',l=>`<span class="lk"><small style="color:var(--good)">${l.h}</small><b style="height:${Math.max(3,l.h/6*70)}px;background:var(--good)"></b></span>`);
+    h+=row('😂',l=>`<span class="lk"><small>${l.l}</small><b style="height:${Math.max(3,l.l/6*70)}px"></b></span>`);
+    h+=row('📤',l=>`<span class="lk"><small>${l.share}</small><b style="height:${Math.max(3,l.share/maxS*70)}px;background:#7d8794"></b></span>`)+'</div>';
+    st.innerHTML=h;
+    const c=document.createElement('div');c.className='cards';
+    const r=document.createElement('button');r.className='card';r.innerHTML='<span class="ic">⟲</span><span class="w">Nochmal</span>';r.onclick=restart;
+    const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;
+    c.appendChild(r);bt.append(bk,c);return;}
+}
+document.addEventListener('keydown',e=>{const s=S[cur];if(e.key==='ArrowRight'&&s.next&&s.type!=='decide')go(s.next);if(e.key==='ArrowLeft')back();});
+render();
+
+</script>
+
+</body>
+</html>
