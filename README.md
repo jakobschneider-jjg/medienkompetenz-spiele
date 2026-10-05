@@ -4,6 +4,8 @@ Kurze, bildbasierte Lernspiele zu Social Media für Kinder der Klassen 3 und 4 m
 
 ## Module
 
+Online: [Startseite](https://jakobschneider-jjg.github.io/medienkompetenz-spiele/) · [Echte Freundinnen](https://jakobschneider-jjg.github.io/medienkompetenz-spiele/echte-freundinnen/) · [Der Sticker](https://jakobschneider-jjg.github.io/medienkompetenz-spiele/der-sticker/)
+
 | Modul | Thema | Ordner |
 |---|---|---|
 | Echte Freundinnen | Schönheitsideale, Filter, echte und Online-Freundschaft | [`echte-freundinnen/`](echte-freundinnen/) |
