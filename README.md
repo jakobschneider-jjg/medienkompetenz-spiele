@@ -13,13 +13,13 @@ Online: [Startseite](https://jakobschneider-jjg.github.io/medienkompetenz-spiele
 
 ## Echte Freundinnen
 
-Eine Woche mit Lena, Mia und Ayla: 13 Entscheidungen und 3 Aufgaben (Filter-Detektiv, Kommentare sortieren, „echt oder online?“). Oben zeigen drei Anzeigen, wie es Lena geht, wie nah ihre echten Freundinnen sind und wie viele Online-Freunde und Likes sie hat. Die Woche endet je nach Entscheidungen mit einem von drei Enden (🌈, 🌤️, 🌧️).
+Eine Woche mit Lena, Mia und Ayla: 12 bis 14 Entscheidungen und 3 Aufgaben (Filter-Detektiv, Kommentare sortieren, „echt oder online?“). Die Geschichte verzweigt: Was die Kinder entscheiden, verändert die nächsten Szenen (zum Beispiel postet Lena mit oder ohne Filter, und ein Fremder schreibt nur, wenn sie ihn als Online-Freund annimmt). Oben zeigen drei Anzeigen, wie es Lena geht, wie nah ihre echten Freundinnen sind und wie viele Online-Freunde und Likes sie hat. Die Woche endet je nach Entscheidungen mit einem von drei Enden (🌈, 🌤️, 🌧️).
 
 **Einsatz:** Partnerarbeit, ein iPad pro Paar. Das Paar trifft alle Entscheidungen gemeinsam. Danach werden die Erfahrungen und Enden im Plenum verglichen. Die Geschichte wird vorab mit der Gruppe besprochen.
 
 ## Der Sticker
 
-Eine Woche im Klassenchat: Ben macht aus Noahs Tanzfoto einen Sticker mit Schweinenase, und der Sticker wird weitergeschickt. Das Paar entscheidet meist als Ayla, die zusieht, zweimal als Noah und einmal als Ben: 9 bis 11 Entscheidungen und 3 Aufgaben („Wie fühlt sich Noah?“, „Wer fühlt was?“, „Melden und blockieren“). Oben zeigen die Anzeigen, wie es Noah geht, was die Klasse macht (rot: lacht mit, grün: hilft), wie es Ayla geht und wie oft sie für mutiges Helfen ausgelacht wurde (🙄) und wie oft der Sticker weitergeschickt wurde. Die Woche endet mit einem von drei Enden (🌈, 🌤️, 🌧️).
+Eine Woche im Klassenchat: Ben macht aus Noahs Tanzfoto einen Sticker mit Schweinenase, und der Sticker wird weitergeschickt. Das Paar entscheidet meist als Ayla, die zusieht, ein- oder zweimal als Noah und einmal als Ben: 8 bis 11 Entscheidungen und 3 Aufgaben („Wie fühlt sich Noah?“, „Wer fühlt was?“, „Melden und blockieren“). Oben zeigen die Anzeigen, wie es Noah geht, was die Klasse macht (rot: lacht mit, grün: hilft), wie es Ayla geht und wie oft sie für mutiges Helfen ausgelacht wurde (🙄) und wie oft der Sticker weitergeschickt wurde. Die Geschichte verzweigt: Weiß zum Beispiel die Lehrerin Bescheid, passt sie in der Pause auf, und Ben wird ermahnt. Die Woche endet mit einem von drei Enden (🌈, 🌤️, 🌧️).
 
 **Einsatz:** Partnerarbeit, ein iPad pro Paar, danach Reflexion im Plenum mit dem Plakat „6 Tipps gegen Cyber-Mobbing“. Vor dem Einsatz prüfen, ob es in der Gruppe gerade einen Mobbingfall gibt. Es erscheinen keine echten Beleidigungen; der Klassenchat ist eine erfundene App ohne Markennamen.
 

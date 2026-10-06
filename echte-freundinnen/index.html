@@ -263,10 +263,16 @@ BG.school=`<rect width="800" height="500" fill="#f3ecdc"/><rect x="230" y="90" w
 BG.yard=`<rect width="800" height="500" fill="#bfe6fb"/><circle cx="700" cy="70" r="38" fill="#ffd95a"/><rect y="330" width="800" height="170" fill="#bdb6aa"/><rect x="0" y="250" width="800" height="90" fill="#d07a54"/><path d="M0,250 h800" stroke="#a85c3c" stroke-width="6"/>`;
 BG.party=BG.room+`<path d="M160,40 Q400,110 640,40" stroke="#555" stroke-width="2" fill="none"/>${[200,260,320,380,440,500,560,620].map((x,i)=>`<path d="M${x},${52+Math.sin(i)*6} l14,30 l14,-30Z" fill="${['#e63946','#f4a261','#2a9d8f','#9b5de5'][i%4]}"/>`).join('')}<ellipse cx="80" cy="120" rx="34" ry="42" fill="#e63946"/><ellipse cx="740" cy="130" rx="34" ry="42" fill="#2a9d8f"/><path d="M80,162 v80 M740,172 v80" stroke="#555" stroke-width="2"/>`;
 const cake=(x,y)=>`<g transform="translate(${x} ${y})"><rect x="-70" y="0" width="140" height="70" rx="10" fill="#f6a5c0"/><rect x="-70" y="0" width="140" height="18" rx="8" fill="#fff"/><rect x="-4" y="-34" width="8" height="34" fill="#9b5de5"/><path d="M0,-50 q8,10 0,16 q-8,-6 0,-16Z" fill="#ffb703"/></g>`;
+const postPic=(x,y)=>phone(x,y,130,200,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(4,4,W-8,H-8,{who:'lena',mood:'smile',filter:ST.fake})}`); // Lena's Tuesday post as she really posted it
+const foxChat=rows=>(W,H)=>{let g=`<rect width="${W}" height="${H}" fill="#fff4ea"/><text x="${W/2}" y="26" font-size="20" font-weight="900" text-anchor="middle" dominant-baseline="central" ${FONT}>💬 🦊</text>`;
+  rows.forEach(([a,t],i)=>{const y=56+i*80,me=a==='me';g+=`<rect x="${me?60:8}" y="${y}" width="${me?W-68:W-16}" height="64" rx="16" fill="${me?'#dcf5d2':'#fff'}" stroke="#ccd" stroke-width="2"/>`+(me?'':emo(a,32,y+32,30))+`<text x="${me?W/2+30:58}" y="${y+33}" font-size="18" font-weight="800" text-anchor="${me?'middle':'start'}" dominant-baseline="central" ${FONT}>${t}</text>`;});
+  return g;};
 const bench=`<rect x="140" y="360" width="300" height="22" rx="6" fill="#8a5a33"/><rect x="160" y="380" width="14" height="50" fill="#6b4a2e"/><rect x="406" y="380" width="14" height="50" fill="#6b4a2e"/>`;
 
 /* ---------- state ---------- */
-const START={herz:7,likes:0,follow:0,mia:3,ayla:3,fake:false,fuchs:false,day:0,log:[]};
+const START={herz:7,likes:0,follow:0,mia:3,ayla:3,fake:false,fuchs:false,tired:false,mocked:false,party:false,day:0,log:[]};
+/* cards and next can be functions, so later scenes follow earlier decisions */
+const val=v=>typeof v==='function'?v():v;
 let ST=JSON.parse(JSON.stringify(START)), cur='start', last=null; const hist=[];
 const L=(m)=>m||moodOf(ST.herz);
 const LENA=(o={})=>kid({who:'lena',...o,mood:L(o.mood)});
@@ -307,11 +313,14 @@ const S={
  di2:{type:'decide',who:'lena',draw:()=>BG.room+cap('Posten?')+phone(130,80,230,400,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(6,6,W-12,H-60,{who:'lena',mood:'smile'})}`)+tag(245,90,'ohne Filter')+phone(450,80,230,400,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(6,6,W-12,H-60,{who:'lena',mood:'smile',filter:true})}`)+tag(565,90,'mit Filter 🎭'),
   cards:[{ic:'🎭📤',w:'Mit Filter',eff:{herz:1,likes:48,follow:8,fake:true,mia:-1},res:()=>BG.room+cap('48 Likes!')+phone(420,60,260,420,post({who:'lena',mood:'smile',filter:true},48))+LENA({x:230,y:290,mood:'happy'})+think(40,110,'Alle mögen mich!',200,220)+msg(470,400,'mia','Bist du das? 🤔'),next:'di3'},
          {ic:'😀📤',w:'Ohne Filter',eff:{herz:1,likes:9,follow:1},res:()=>BG.room+cap('9 Likes')+phone(420,60,260,420,post({who:'lena',mood:'happy'},9))+LENA({x:230,y:290,mood:'smile'})+msg(470,400,'mia','Schön! ❤️'),next:'di3'}]},
- di3:{type:'scene',draw:()=>BG.school+cap('In der Schule')+LENA({x:250,y:290,hold:'phone',mood:'smile'})+kid({x:570,y:290,who:'ayla',mood:'amazed',flip:true})+say(260,110,'Mein Foto!',260,200),next:'di4'},
- di4:{type:'decide',who:'ayla',draw:()=>BG.school+cap('Was sagt Ayla?')+LENA({x:250,y:290,hold:'phone',mood:'smile'})+kid({x:570,y:290,who:'ayla',mood:'unsure',flip:true})+think(520,90,'Hmm …',570,215),
-  cards:[{ic:'💛😊',w:'Loben',eff:{herz:1},res:()=>BG.school+cap('Ayla lobt')+LENA({x:250,y:290,mood:'happy'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true})+say(420,100,'Du bist echt schön!',560,215),next:'d2'},
+ di3:{type:'scene',draw:()=>BG.school+cap('In der Schule')+LENA({x:220,y:290,hold:'phone',mood:'smile'})+kid({x:600,y:290,who:'ayla',mood:'amazed',flip:true})+say(40,90,'Mein Foto!',180,180)+postPic(345,150)+tag(410,385,ST.fake?'mit Filter 🎭':'ohne Filter 📷'),next:'di4'},
+ di4:{type:'decide',who:'ayla',draw:()=>BG.school+cap('Was sagt Ayla?')+LENA({x:220,y:290,hold:'phone',mood:'smile'})+kid({x:600,y:290,who:'ayla',mood:'unsure',flip:true})+think(560,90,'Hmm …',600,200)+postPic(345,150),
+  cards:()=>ST.fake?[{ic:'💛😊',w:'Loben',eff:{herz:1},res:()=>BG.school+cap('Ayla lobt')+LENA({x:250,y:290,mood:'happy'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true})+say(420,100,'Du bist echt schön!',560,215),next:'d2'},
          {ic:'🎭🙋',w:'Auch Filter',eff:{follow:2},res:()=>BG.school+cap('Ayla will auch Filter')+LENA({x:250,y:290,mood:'smile',hold:'phone'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true})+say(440,100,'Ich auch! 🎭',560,215),next:'d2'},
-         {ic:'😂',w:'Auslachen',eff:{herz:-2,ayla:-2},res:()=>BG.school+cap('Ayla lacht')+LENA({x:250,y:290,mood:'sad'})+kid({x:570,y:290,who:'ayla',mood:'cheeky',flip:true})+say(460,100,'Haha, Fake!',560,215),next:'d2'}]},
+         {ic:'😂',w:'Auslachen',eff:{herz:-2,ayla:-2,mocked:true},res:()=>BG.school+cap('Ayla lacht')+LENA({x:250,y:290,mood:'sad'})+kid({x:570,y:290,who:'ayla',mood:'cheeky',flip:true})+say(460,100,'Haha, Fake!',560,215),next:'d2'}]
+   :[{ic:'💛😊',w:'Loben',eff:{herz:2},res:()=>BG.school+cap('Ayla lobt')+LENA({x:250,y:290,mood:'happy'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true})+say(420,100,'Echt schön! 📷',560,215),next:'d2'},
+     {ic:'📷🙋',w:'Auch ohne Filter',eff:{herz:1},res:()=>BG.school+cap('Ayla auch echt')+LENA({x:250,y:290,mood:'happy',hold:'phone'})+kid({x:570,y:290,who:'ayla',mood:'happy',flip:true,hold:'phone'})+say(440,100,'Ich auch! 📷',560,215)+emo('🤝',410,330,60),next:'d2'},
+     {ic:'😂',w:'Auslachen',eff:{herz:-2,ayla:-2,mocked:true},res:()=>BG.school+cap('Ayla lacht')+LENA({x:250,y:290,mood:'sad'})+kid({x:570,y:290,who:'ayla',mood:'cheeky',flip:true})+say(460,100,'Haha! 😂',560,215),next:'d2'}]},
  d2:{type:'day',day:2,next:'mi1'},
  mi1:{type:'scene',draw:()=>BG.room+cap('Kommentare')+LENA({x:220,y:290,mood:'neutral',hold:'phone'})+phone(430,20,250,460,commentsScreen()),next:'mi2'},
  mi2:{type:'sort',title:'Nett oder gemein?',items:()=>COMMENTS().map(c=>({av:c.a==='mia'?headIcon('mia','smile'):c.a,tx:c.c,k:c.k?'y':'n'})),opts:[{ic:'👍',k:'y',l:'nett'},{ic:'👎',k:'n',l:'gemein'}],next:'mi3'},
@@ -325,43 +334,52 @@ const S={
   cards:[{ic:'✅🦊',w:'Annehmen',eff:{follow:1,likes:5,fuchs:true},res:()=>BG.room+cap('Neuer Online-Freund')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${emo('🦊',W/2,120,80)}${emo('❤️❤️❤️',W/2,240,40)}`)+think(40,100,'Kenne ich nicht …',210,215),next:'d3'},
          {ic:'❌🦊',w:'Ablehnen',eff:{},res:()=>BG.room+cap('Abgelehnt')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${emo('🦊',W/2,140,80)}${emo('❌',W/2,140,140)}`),next:'d3'},
          {ic:'👩❓',w:'Mama fragen',eff:{herz:1},res:()=>BG.room+cap('Mama fragen')+kid({x:560,y:230,who:'adult',mood:'smile',s:1.05,flip:true})+LENA({x:260,y:300,mood:'smile',hold:'phone'})+say(430,40,'Kennst du ihn?',540,140),next:'d3'}]},
- d3:{type:'day',day:3,next:'do1'},
+ d3:{type:'day',day:3,next:()=>ST.fuchs?'fx1':'do1'},
+ fx1:{type:'scene',draw:()=>BG.room+cap('Fuchs schreibt')+LENA({x:230,y:290,mood:'unsure',hold:'phone'})+phone(430,40,250,430,foxChat([['🦊','Hallo! 😊'],['🦊','Wie alt bist du?'],['🦊','Wo wohnst du?']]))+think(40,100,'Komisch …',190,215),next:'fx2'},
+ fx2:{type:'decide',who:'lena',draw:()=>S.fx1.draw().replace(cap('Fuchs schreibt'),cap('Was macht Lena?')),
+  cards:[{ic:'💬🏠',w:'Antworten',eff:{herz:-2},res:()=>BG.room+cap('Zu viel verraten')+LENA({x:230,y:290,mood:'unsure',hold:'phone'})+phone(430,40,250,430,foxChat([['🦊','Wo wohnst du?'],['me','🏠 …'],['🦊','Treffen? 🤫']]))+emo('⚠️',330,190,60),next:'do1'},
+         {ic:'⛔🦊',w:'Blockieren',eff:{herz:1},res:()=>BG.room+cap('Blockiert')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#fff"/>${emo('🦊',W/2,150,90)}${emo('⛔',W/2,150,150)}`),next:'do1'},
+         {ic:'📱👩',w:'Mama zeigen',eff:{herz:2},res:()=>BG.room+cap('Mama hilft')+kid({x:560,y:230,who:'adult',mood:'unsure',s:1.05,flip:true})+LENA({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,'Gut, dass du fragst!',560,140,{fs:24}),next:'do1'}]},
  do1:{type:'scene',draw:()=>BG.night+cap('22 Uhr')+clock(470,110,'22:00')+LENA({x:220,y:300,mood:'neutral',hold:'phone'})+emo('❤️',330,250,34)+emo('🔔',400,260,40)+think(40,100,'Noch mehr Likes?',200,230),next:'do2'},
  do2:{type:'decide',who:'lena',draw:()=>S.do1.draw().replace(cap('22 Uhr'),cap('Was jetzt?')),
   cards:[{ic:'📵😴',w:'Weglegen',eff:{herz:1},res:()=>BG.night+cap('Gute Nacht')+clock(470,110,'22:05')+LENA({x:220,y:300,mood:'sleep'})+emo('💤',330,200,56)+`<rect x="580" y="330" width="120" height="80" fill="#6b4a2e"/><rect x="610" y="318" width="40" height="14" rx="3" fill="#1d1d24"/>`,next:'do3'},
-         {ic:'📱🔁',w:'Weiter',eff:{herz:-2,likes:15},res:()=>BG.night+cap('Spät und müde')+clock(470,110,'23:30')+LENA({x:220,y:300,mood:'tired',hold:'phone'})+emo('❤️',330,250,34)+emo('❤️',360,200,28)+emo('🥱',600,330,70),next:'do3'}]},
+         {ic:'📱🔁',w:'Weiter',eff:{herz:-2,likes:15,tired:true},res:()=>BG.night+cap('Spät und müde')+clock(470,110,'23:30')+LENA({x:220,y:300,mood:'tired',hold:'phone'})+emo('❤️',330,250,34)+emo('❤️',360,200,28)+emo('🥱',600,330,70),next:'do3'}]},
  do3:{type:'scene',draw:()=>BG.room+cap('Online-Freunde')+LENA({x:220,y:300,mood:'unsure',hold:'phone'})+phone(430,20,260,460,groupChat)+think(30,100,'Mitmachen?',200,230),next:'do4'},
  do4:{type:'decide',who:'lena',draw:()=>S.do3.draw(),
   cards:[{ic:'🎭🏆',w:'Mitmachen',eff:{likes:30,follow:10,herz:-1,fake:true},res:()=>BG.room+cap('+30 Likes')+LENA({x:220,y:300,mood:'neutral',hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},ST.likes))+think(20,100,'Noch mehr Filter …',190,230),next:'d4'},
          {ic:'✋',w:'Nein',eff:{},res:()=>BG.room+cap('Nein danke')+LENA({x:250,y:300,mood:'smile',hold:'phone'})+emo('✋',560,250,140),next:'d4'},
          {ic:'📞',w:'Mia anrufen',eff:{herz:1,mia:1},res:()=>BG.room+cap('Anruf bei Mia')+LENA({x:220,y:300,mood:'happy',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#e8f6e8"/>${portrait(6,40,W-12,H-80,{who:'mia',mood:'happy'})}`)+say(500,20,'Hallo Lena!',560,90),next:'d4'}]},
  d4:{type:'day',day:4,next:'fr1'},
- fr1:{type:'scene',draw:()=>BG.mirror+cap('Einladung')+LENA({x:580,y:270,mood:'unsure',s:.9})+LENA({x:240,y:300,mood:'unsure',hold:'phone'})+msg(20,90,'mia','Spielplatz? 🛝')+think(150,170,'Ohne Filter?',240,235,{fs:24,h:70}),next:'fr2'},
+ fr1:{type:'scene',draw:()=>BG.mirror+cap('Einladung')+LENA({x:580,y:270,mood:ST.tired?'tired':'unsure',s:.9})+LENA({x:240,y:300,mood:ST.tired?'tired':'unsure',hold:'phone'})+(ST.tired?emo('🥱',700,140,60):'')+msg(20,90,'mia','Spielplatz? 🛝')+think(150,170,'Ohne Filter?',240,235,{fs:24,h:70}),next:'fr2'},
  fr2:{type:'decide',who:'lena',draw:()=>S.fr1.draw().replace(cap('Einladung'),cap('Hingehen?')),
   cards:[{ic:'🛝😀',w:'Hingehen',eff:{herz:3,mia:1},res:()=>BG.play+cap('Spielplatz!')+LENA({x:630,y:210,mood:'happy',s:.7})+kid({x:400,y:260,who:'mia',mood:'happy',s:.85,flip:true})+say(300,60,'Juhu!',380,170),next:'fr3'},
          {ic:'🤒🛏️',w:'Ausrede',eff:{herz:-3,mia:-2},res:()=>`<svg x="0" y="0" width="400" height="500" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">${BG.night}${LENA({x:300,y:290,mood:'sad',hold:'phone'})}</svg><svg x="400" y="0" width="400" height="500" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">${BG.play}${kid({x:500,y:290,who:'mia',mood:'sad'})}</svg><rect x="397" width="6" height="500" fill="#fff"/>`+cap('Bin krank.')+tag(600,90,'Mia wartet'),next:'fr3'},
          {ic:'🎭📤',w:'Filter-Foto',eff:{herz:-1,likes:30,follow:5,fake:true,mia:-1},res:()=>BG.play+cap('Mia ist verwirrt')+kid({x:240,y:290,who:'mia',mood:'unsure',hold:'phone'})+phone(440,60,250,420,post({who:'lena',mood:'smile',filter:true},'+30'))+think(40,100,'Wo ist Lena?',220,220),next:'fr3'}]},
- fr3:{type:'scene',draw:()=>BG.yard+cap('Pause')+bench+LENA({x:290,y:270,s:.85,hold:'phone'})+kid({x:620,y:270,who:'ayla',mood:'smile',s:.85,flip:true})+`<circle cx="700" cy="440" r="34" fill="#fff" stroke="#333" stroke-width="3"/><path d="M670,430 q30,20 60,0" stroke="#333" stroke-width="3" fill="none"/>`+think(60,90,'Likes?',260,190),next:'fr4'},
+ fr3:{type:'scene',draw:()=>BG.yard+cap('Pause')+bench+LENA({x:290,y:270,s:.85,hold:'phone',mood:ST.mocked?'sad':undefined})+kid({x:620,y:270,who:'ayla',mood:ST.mocked?'unsure':'smile',s:.85,flip:true})+(ST.mocked?emo('😕',400,170,50):'')+`<circle cx="700" cy="440" r="34" fill="#fff" stroke="#333" stroke-width="3"/><path d="M670,430 q30,20 60,0" stroke="#333" stroke-width="3" fill="none"/>`+think(60,90,'Likes?',260,190),next:'fr4'},
  fr4:{type:'decide',who:'ayla',draw:()=>S.fr3.draw().replace(cap('Pause'),cap('Was macht Ayla?')),
-  cards:[{ic:'⚽🤝',w:'Holen',eff:{herz:2,ayla:1},res:()=>BG.yard+cap('Zusammen spielen')+LENA({x:300,y:270,s:.85,mood:'happy'})+kid({x:540,y:270,who:'ayla',mood:'happy',s:.85,flip:true})+`<circle cx="420" cy="430" r="34" fill="#fff" stroke="#333" stroke-width="3"/>`+say(450,60,'Komm, spielen!',540,180),next:'d5'},
+  cards:[{ic:'⚽🤝',w:'Holen',eff:{herz:2,ayla:1},res:()=>BG.yard+cap(ST.mocked?'Wieder Freundinnen':'Zusammen spielen')+LENA({x:300,y:270,s:.85,mood:'happy'})+kid({x:540,y:270,who:'ayla',mood:'happy',s:.85,flip:true})+`<circle cx="420" cy="430" r="34" fill="#fff" stroke="#333" stroke-width="3"/>`+say(420,60,ST.mocked?'Sorry! Spielen?':'Komm, spielen!',540,180),next:'d5'},
          {ic:'🚶',w:'Weggehen',eff:{herz:-1,ayla:-2},res:()=>BG.yard+cap('Lena bleibt allein')+bench+LENA({x:290,y:270,s:.85,mood:'sad',hold:'phone'})+kid({x:740,y:270,who:'ayla',mood:'neutral',s:.6,flip:true}),next:'d5'},
          {ic:'📱📱',w:'Auch Handy',eff:{},res:()=>BG.yard+cap('Beide am Handy')+bench+LENA({x:250,y:270,s:.85,mood:'neutral',hold:'phone'})+kid({x:420,y:270,who:'ayla',mood:'neutral',s:.85,hold:'phone',flip:true}),next:'d5'}]},
  d5:{type:'day',day:5,next:'sa1'},
  sa1:{type:'scene',draw:()=>BG.party+cap('Ayla hat Geburtstag')+kid({x:330,y:250,who:'ayla',mood:'happy',s:.85})+kid({x:540,y:250,who:'mia',mood:'happy',s:.85,flip:true})+cake(430,400)+say(250,90,'Kommst du, Lena?',320,165),next:'sa2'},
  sa2:{type:'decide',who:'lena',draw:()=>BG.party+cap('Feiern?')+LENA({x:250,y:290,mood:'unsure',hold:'phone'})+cake(560,400)+kid({x:620,y:220,who:'ayla',mood:'smile',s:.6,flip:true})+kid({x:500,y:220,who:'mia',mood:'smile',s:.6,flip:true}),
-  cards:[{ic:'🎂😀',w:'Mitfeiern',eff:{herz:2,ayla:1,mia:1},res:()=>BG.party+cap('Party!')+LENA({x:240,y:250,s:.8,mood:'happy'})+kid({x:420,y:250,who:'ayla',mood:'happy',s:.8})+kid({x:600,y:250,who:'mia',mood:'happy',s:.8,flip:true})+cake(420,420),next:'sa3'},
+  cards:[{ic:'🎂😀',w:'Mitfeiern',eff:{herz:2,ayla:1,mia:1,party:true},res:()=>BG.party+cap('Party!')+LENA({x:240,y:250,s:.8,mood:'happy'})+kid({x:420,y:250,who:'ayla',mood:'happy',s:.8})+kid({x:600,y:250,who:'mia',mood:'happy',s:.8,flip:true})+cake(420,420),next:'sa3'},
          {ic:'📸🎭',w:'Nur Fotos',eff:{likes:20,follow:3,herz:-1,ayla:-1,mia:-1},res:()=>BG.party+cap('Nur am Handy')+LENA({x:240,y:270,s:.85,mood:'neutral',hold:'phone'})+kid({x:430,y:250,who:'ayla',mood:'sad',s:.8})+kid({x:610,y:250,who:'mia',mood:'unsure',s:.8,flip:true})+say(330,80,'Leg das Handy weg!',430,175),next:'sa3'},
          {ic:'🏠📱',w:'Zuhause',eff:{herz:-2,ayla:-2,mia:-1},res:()=>BG.night+cap('Allein mit Likes')+LENA({x:300,y:290,mood:'sad',hold:'phone'})+emo('❤️',430,240,36)+emo('❤️',470,200,30),next:'sa3'}]},
- sa3:{type:'scene',draw:()=>BG.room+cap('Mia macht sich Sorgen')+kid({x:250,y:300,who:'mia',mood:'unsure'})+bubble(390,80,300,230,headAt('lena',450,100,180,moodOf(Math.min(ST.herz,5))),310,200,true),next:'sa4'},
+ sa3:{type:'scene',draw:()=>ST.party?BG.room+cap('Mia freut sich')+kid({x:250,y:300,who:'mia',mood:'happy'})+bubble(390,80,300,230,headAt('lena',450,100,180,'happy'),310,200,true)+say(40,90,'Schöner Tag! 🎂',200,190):BG.room+cap('Mia macht sich Sorgen')+kid({x:250,y:300,who:'mia',mood:'unsure'})+bubble(390,80,300,230,headAt('lena',450,100,180,moodOf(Math.min(ST.herz,5))),310,200,true),next:()=>ST.party?'d6':'sa4'},
  sa4:{type:'decide',who:'mia',draw:()=>S.sa3.draw().replace(cap('Mia macht sich Sorgen'),cap('Was macht Mia?')),
   cards:[{ic:'📷😜',w:'Echtes Foto',eff:{herz:3,mia:1},res:()=>BG.room+cap('Lena lacht')+LENA({x:230,y:290,mood:'happy',hold:'phone'})+phone(430,40,250,430,post({who:'mia',mood:'cheeky'},''))+tag(555,445,'Echt Mia! 😂'),next:'d6'},
-         {ic:'👍🎭',w:'Like',eff:{likes:1},res:()=>BG.night+cap('Nur ein Like')+LENA({x:230,y:290,hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},ST.likes)),next:'d6'},
+         {ic:'👍🎭',w:'Like',eff:{likes:1},res:()=>BG.night+cap('Nur ein Like')+LENA({x:230,y:290,hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:ST.fake},ST.likes)),next:'d6'},
          {ic:'👩❓',w:'Mama fragen',eff:{herz:2},res:()=>BG.room+cap('Mia fragt Mama')+kid({x:540,y:230,who:'adult',mood:'smile',s:1.05,flip:true})+kid({x:270,y:300,who:'mia',mood:'smile'})+say(380,40,'Wir rufen Lena an!',530,140),next:'d6'},
          {ic:'🙈',w:'Nichts tun',eff:{herz:-2,mia:-1},res:()=>BG.night+cap('Niemand fragt')+LENA({x:300,y:290,mood:'sad',hold:'phone'}),next:'d6'}]},
  d6:{type:'day',day:6,next:'so1'},
  so1:{type:'sort',title:'Echt oder online?',items:()=>[{av:headIcon('mia','smile'),tx:'Mia',k:'r'},{av:headIcon('bella','smile',true),tx:'Bella',k:'o'},{av:headIcon('ayla','smile'),tx:'Ayla',k:'r'},{av:'🦊',tx:'Fuchs',k:'o'},{av:'🐼',tx:'Panda',k:'o'},{av:headIcon('adult','smile'),tx:'Mama',k:'r'}],opts:[{ic:'🤝',k:'r',l:'echt'},{ic:'📱',k:'o',l:'online'}],next:'so2'},
- so2:{type:'decide',who:'lena',draw:()=>BG.room+cap('Die Filter-App')+LENA({x:230,y:290,hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/><rect x="${W/2-70}" y="110" width="140" height="140" rx="32" fill="#c56bf0"/>${emo('🎭',W/2,180,90)}`),
-  cards:[{ic:'🗑️🎭',w:'Löschen',eff:{herz:2},res:()=>BG.room+cap('Gelöscht')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/>${emo('🎭',W/2-30,150,70)}${emo('➡️',W/2+10,230,40)}${emo('🗑️',W/2+40,300,80)}`),next:'so3'},
+ so2:{type:'decide',who:'lena',draw:()=>ST.fake?BG.room+cap('Die Filter-App')+LENA({x:230,y:290,hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/><rect x="${W/2-70}" y="110" width="140" height="140" rx="32" fill="#c56bf0"/>${emo('🎭',W/2,180,90)}`)
+   :BG.park+cap('Mia hat Filter')+LENA({x:230,y:280,mood:'amazed'})+kid({x:430,y:280,who:'mia',mood:'cheeky',hold:'phone',flip:true})+phone(560,70,200,330,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/>${portrait(6,6,W-12,H-12,{who:'lena',mood:'happy',filter:true})}${emo('🐰',W/2,40,50)}`)+say(300,80,'Lustig! 🐰',420,180),
+  cards:()=>!ST.fake?[{ic:'🐰😂',w:'Nur Spaß',eff:{herz:2,mia:1},res:()=>BG.park+cap('Nur zum Spaß')+LENA({x:300,y:260,mood:'happy'})+kid({x:520,y:260,who:'mia',mood:'happy',flip:true})+emo('🐰',300,160,70)+emo('🐶',520,160,70)+tag(410,470,'nicht posten 🚫'),next:'so3'},
+         {ic:'🎭📤',w:'Posten',eff:{herz:-1,likes:20,fake:true},res:()=>BG.night+cap('Doch mit Filter')+LENA({x:230,y:290,mood:'neutral',hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},'+20'))+think(40,100,'Bin das ich?',200,220),next:'so3'},
+         {ic:'✋',w:'Nein danke',eff:{herz:1},res:()=>BG.park+cap('Lieber echt')+LENA({x:300,y:270,mood:'happy'})+kid({x:520,y:270,who:'mia',mood:'smile',flip:true})+say(200,80,'Ich bleib echt! 📷',360,180),next:'so3'}]
+   :[{ic:'🗑️🎭',w:'Löschen',eff:{herz:2},res:()=>BG.room+cap('Gelöscht')+LENA({x:230,y:290,mood:'smile',hold:'phone'})+phone(430,40,250,430,(W,H)=>`<rect width="${W}" height="${H}" fill="#f5efff"/>${emo('🎭',W/2-30,150,70)}${emo('➡️',W/2+10,230,40)}${emo('🗑️',W/2+40,300,80)}`),next:'so3'},
          {ic:'🐰😂',w:'Nur Spaß',eff:{herz:2,mia:1},res:()=>BG.park+cap('Nur zum Spaß')+LENA({x:300,y:260,mood:'happy'})+kid({x:520,y:260,who:'mia',mood:'happy',flip:true})+emo('🐰',300,160,70)+emo('🐶',520,160,70)+tag(410,470,'nicht posten 🚫'),next:'so3'},
          {ic:'🎭🔁',w:'Weiter so',eff:{herz:-2,likes:20},res:()=>BG.night+cap('Immer mit Filter')+LENA({x:230,y:290,mood:'sad',hold:'phone'})+phone(430,40,250,430,post({who:'lena',mood:'smile',filter:true},ST.likes)),next:'so3'}]},
  so3:{type:'decide',who:'lena',draw:()=>BG.room+cap('Sonntag Nachmittag')+LENA({x:230,y:300,hold:'phone'})+headAt('mia',575,80,80,'happy')+headAt('ayla',640,80,80,'happy')+tag(660,230,'Komm raus! 🛝')+phone(330,250,120,200,(W,H)=>`<rect width="${W}" height="${H}" fill="#fdeef4"/>${portrait(4,4,W-8,H-40,{who:'bella',mood:'smile',filter:true})}<rect x="6" y="${H-32}" width="60" height="24" rx="6" fill="#e63946"/><text x="36" y="${H-19}" font-size="15" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central" ${FONT}>LIVE</text>`),
@@ -408,7 +426,7 @@ function choose(c,k){
   const rid='r_'+cur+'_'+k, b=snap();
   const e=c.eff;
   ST.herz=clamp(ST.herz+(e.herz||0),0,10); ST.mia=clamp(ST.mia+(e.mia||0),0,3); ST.ayla=clamp(ST.ayla+(e.ayla||0),0,3);
-  ST.likes+=e.likes||0; ST.follow+=e.follow||0; if(e.fake)ST.fake=true; if(e.fuchs)ST.fuchs=true;
+  ST.likes+=e.likes||0; ST.follow+=e.follow||0; ['fake','fuchs','tired','mocked','party'].forEach(k=>{if(e[k])ST[k]=true;});
   S[rid]={type:'scene',draw:c.res,next:c.next};cur=rid;
   last={at:rid,d:{herz:ST.herz-b.herz,real:real()-b.real,mia:ST.mia-b.mia,ayla:ST.ayla-b.ayla,online:(ST.follow-b.follow)+(ST.likes-b.likes)}};
   render();
@@ -416,7 +434,7 @@ function choose(c,k){
 function navBar(nextId,middle){
   const n=document.createElement('div');n.className='nav';
   const b=document.createElement('button');b.className='arrow back';b.textContent='◀';b.setAttribute('aria-label','Zurück');b.disabled=!hist.length;b.onclick=back;
-  const f=document.createElement('button');f.className='arrow';f.textContent='▶';f.setAttribute('aria-label','Weiter');if(nextId)f.onclick=()=>go(nextId);else f.disabled=true;
+  const f=document.createElement('button');f.className='arrow';f.textContent='▶';f.setAttribute('aria-label','Weiter');if(nextId)f.onclick=()=>go(val(nextId));else f.disabled=true;
   let m=middle; if(!m){m=document.createElement('button');m.className='restart';m.textContent='⟲';m.setAttribute('aria-label','Von vorn');m.onclick=restart;}
   n.append(b,m,f);return n;
 }
@@ -426,7 +444,7 @@ function render(){
   const s=S[cur], st=$('stage'), bt=$('bottom');
   st.innerHTML='';bt.innerHTML='';drawTop(s);
   if(s.type==='start'){
-    st.innerHTML=`<div class="startbox"><svg viewBox="0 0 800 330">${BG.park.replace('height="500"','height="330"')}${LENA({x:250,y:180,s:.8,mood:'happy'})}${kid({x:410,y:180,who:'mia',mood:'happy',s:.8,flip:true})}${kid({x:570,y:180,who:'ayla',mood:'happy',s:.8,flip:true})}</svg><h1>Echte Freundinnen</h1><div class="pair" aria-label="Zu zweit spielen">🧒🧒 📱</div><p class="small">Für die Lehrkraft: Eine Woche mit Lena, Mia und Ayla, 13 Entscheidungen und 3 Aufgaben. Partnerarbeit: ein iPad pro Paar, die beiden treffen alle Entscheidungen gemeinsam. Das Gesicht oben zeigt, in wessen Rolle sie gerade entscheiden (meist Lena, manchmal Mia oder Ayla). Danach vergleicht die Klasse die Enden im Plenum. Oben sieht man, wie es Lena geht, wie nah ihre echten Freundinnen sind und wie viele Online-Freunde und Likes sie hat. Das Spiel speichert nichts.</p></div>`;
+    st.innerHTML=`<div class="startbox"><svg viewBox="0 0 800 330">${BG.park.replace('height="500"','height="330"')}${LENA({x:250,y:180,s:.8,mood:'happy'})}${kid({x:410,y:180,who:'mia',mood:'happy',s:.8,flip:true})}${kid({x:570,y:180,who:'ayla',mood:'happy',s:.8,flip:true})}</svg><h1>Echte Freundinnen</h1><div class="pair" aria-label="Zu zweit spielen">🧒🧒 📱</div><p class="small">Für die Lehrkraft: Eine Woche mit Lena, Mia und Ayla, 12 bis 14 Entscheidungen und 3 Aufgaben. Die Geschichte verzweigt: Was Lena und ihre Freundinnen tun, verändert die nächsten Szenen. Partnerarbeit: ein iPad pro Paar, die beiden treffen alle Entscheidungen gemeinsam. Das Gesicht oben zeigt, in wessen Rolle sie gerade entscheiden (meist Lena, manchmal Mia oder Ayla). Danach vergleicht die Klasse die Enden im Plenum. Oben sieht man, wie es Lena geht, wie nah ihre echten Freundinnen sind und wie viele Online-Freunde und Likes sie hat. Das Spiel speichert nichts.</p></div>`;
     const p=document.createElement('button');p.className='arrow';p.style.width='140px';p.textContent='▶';p.setAttribute('aria-label','Start');p.onclick=()=>go('d0');bt.appendChild(p);return;}
   if(s.type==='day'){
     st.innerHTML=`<div class="daycard"><span class="sun">${s.day===6?'☀️🌈':'☀️'}</span><span class="d">${DAYS[s.day]}</span><span class="full">${DAYFULL[s.day]}</span></div>`;
@@ -437,7 +455,7 @@ function render(){
     st.innerHTML=scene(s.draw());
     const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;bk.disabled=!hist.length;
     const c=document.createElement('div');c.className='cards';
-    s.cards.forEach((cd,k)=>{const b=document.createElement('button');b.className='card';b.innerHTML=`<span class="ic" aria-hidden="true">${cd.ic}</span><span class="w">${cd.w}</span>`;b.onclick=()=>choose(cd,k);c.appendChild(b);});
+    val(s.cards).forEach((cd,k)=>{const b=document.createElement('button');b.className='card';b.innerHTML=`<span class="ic" aria-hidden="true">${cd.ic}</span><span class="w">${cd.w}</span>`;b.onclick=()=>choose(cd,k);c.appendChild(b);});
     bt.append(bk,c);return;}
   if(s.type==='detektiv'){
     const spots=[{x:0,y:-4,rx:46,ry:20},{x:38,y:22,rx:13,ry:13},{x:0,y:33,rx:20,ry:13}];const found=new Set();
@@ -475,7 +493,7 @@ function render(){
     const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;
     c.appendChild(r);bt.append(bk,c);return;}
 }
-document.addEventListener('keydown',e=>{const s=S[cur];if(e.key==='ArrowRight'&&s.next&&s.type!=='decide')go(s.next);if(e.key==='ArrowLeft')back();});
+document.addEventListener('keydown',e=>{const s=S[cur];if(e.key==='ArrowRight'&&s.next&&s.type!=='decide')go(val(s.next));if(e.key==='ArrowLeft')back();});
 render();
 </script>
 

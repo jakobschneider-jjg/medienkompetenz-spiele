@@ -364,7 +364,9 @@ const arrowR=(x,y)=>emo('➡️',x,y,46);
 /* ---------- state ---------- */
 /* noah: how Noah feels (0-20, shown as 10 segments in half steps). ayla: Ayla's mood 0-3, rolls: eye-rolls she got for helping. kl: the six classmates, -1 laughs along, 0 watches, 1 helps. share: how often the sticker was sent on. */
 const REIHE=['mia','lena','leo','tom','ella','finn'], ORDER=[2,3,5,0,4,1];
-const START={noah:14,ayla:2,rolls:0,kl:[0,0,0,0,0,0],share:0,mom:false,teacher:false,sorry:false,group:false,day:0,log:[]};
+const START={noah:14,ayla:2,rolls:0,kl:[0,0,0,0,0,0],share:0,mom:false,teacher:false,sorry:false,group:false,dm:false,fwd:false,deleted:false,day:0,log:[]};
+/* auto, cards and next can be functions, so later scenes follow earlier decisions */
+const val=v=>typeof v==='function'?v():v;
 let ST=JSON.parse(JSON.stringify(START)), cur='start', last=null; const hist=[];
 const AMOOD=['sad','unsure','smile','happy'], aylaMood=()=>AMOOD[ST.ayla];
 const helpers=()=>ST.kl.filter(v=>v===1).length, laughers=()=>ST.kl.filter(v=>v===-1).length;
@@ -374,7 +376,7 @@ function flip(n,to){ // others follow the example: neutral classmates first, the
 function apply(e){
   ST.noah=clamp(ST.noah+(e.noah||0),0,20); ST.share=Math.max(0,ST.share+(e.share||0));
   if(e.lach) flip(e.lach,-1); if(e.hilf) flip(e.hilf,1);
-  ['mom','teacher','sorry','group'].forEach(k=>{if(e[k])ST[k]=true;});
+  ['mom','teacher','sorry','group','dm','fwd','deleted'].forEach(k=>{if(e[k])ST[k]=true;});
   // the price of helping lands on Ayla; it eases when others join in or an adult helps
   if(e.mut){ST.ayla=Math.max(0,ST.ayla-1);ST.rolls++;} if(e.ay) ST.ayla=Math.min(3,ST.ayla+e.ay);
 }
@@ -402,17 +404,18 @@ const S={
  mo6:{type:'decide',who:'ayla',draw:()=>BG.room+cap('Was macht Ayla?')+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG(C2)+think(40,90,'Hmm …',190,215),
   cards:[{ic:'😂',w:'Mitlachen',eff:{noah:-4,lach:2},res:()=>BG.room+cap('Noch mehr Lachen')+AYLA({x:230,y:290,mood:'cheeky',hold:'phone'})+CHATBIG([...C2,{who:'ayla',me:true,t:'😂'},{who:'finn',t:'😂🐷'}])+headAt('noah',40,90,110,'cry')+emo('💔',150,110,44),next:'d1'},
          {ic:'🙈',w:'Nichts tun',eff:{noah:-2,lach:1},res:()=>BG.room+cap('Keiner sagt was')+AYLA({x:230,y:290,mood:'neutral'})+emo('🙈',360,200,64)+CHATBIG([...C2,{who:'finn',t:'😂🐷'}]),next:'d1'},
-         {ic:'💌',w:'Noah schreiben',eff:{noah:2,hilf:1},res:()=>BG.room+cap('Privat an Noah')+AYLA({x:230,y:290,mood:'happy',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Toller Tanz! 💛'},{who:'noah',t:'Danke 🙂'}]),next:'d1'},
+         {ic:'💌',w:'Noah schreiben',eff:{noah:2,hilf:1,dm:true},res:()=>BG.room+cap('Privat an Noah')+AYLA({x:230,y:290,mood:'happy',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Toller Tanz! 💛'},{who:'noah',t:'Danke 🙂'}]),next:'d1'},
          {ic:'🛑',w:'„Stopp!“',eff:{noah:1,lach:1,mut:true},res:()=>BG.room+cap('🙄 🙄 🙄')+rollers(['ben','leo','finn'],24,86)+AYLA({x:230,y:290,mood:'sad',hold:'phone'})+emo('😟',330,200,50)+CHATBIG([{who:'ayla',me:true,t:'Stopp! 🛑'},{who:'ben',t:'🙄'},{who:'leo',t:'🙄'},{who:'finn',t:'🙄😂'}])+tag(230,470,'Mut 💪','#e6f4e2'),next:'d1'}]},
 
  d1:{type:'day',day:1,next:'di1'},
  di1:{type:'scene',draw:()=>BG.school+cap('Am nächsten Tag')+NOAH({x:170,y:300,s:.85})+BEN({x:480,y:300,s:.85,mood:'cheeky',hold:'phone'})+LEO({x:660,y:300,s:.85,mood:'cheeky',flip:true})+say(520,96,'Hihi 🐷',560,200),next:'di2'},
  di2:{type:'scene',auto:{share:2,lach:1,noah:-1},draw:()=>BG.room+cap('Der Sticker wandert')+[60,300,540].map((x,i)=>phone(x,120,200,300,chat([{who:['leo','tom','finn'][i],sticker:true,fwd:true}],{title:'👥'})) ).join('')+arrowR(280,270)+arrowR(520,270)+tag(400,460,'📤 📤 📤','#fde3e3'),next:'di3'},
  di3:{type:'decide',who:'ayla',draw:()=>BG.room+cap('Weiterschicken?')+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG([{who:'leo',sticker:true},{who:'leo',t:'Weiter! 📤'}],{title:'💬 Leo',col:'#7d8794'}),
-  cards:[{ic:'📤',w:'Weiterschicken',eff:{share:3,noah:-4,lach:1},res:()=>BG.room+cap('Noch weiter')+AYLA({x:230,y:290,mood:'neutral',hold:'phone'})+[440,560,680].map((x,i)=>phone(x-50,140+i*20,110,170,chat([{who:'ayla',sticker:true,fwd:true}],{title:'👥'}))).join('')+tag(560,90,'📤 +3','#fde3e3'),next:'di4'},
+  cards:[{ic:'📤',w:'Weiterschicken',eff:{share:3,noah:-4,lach:1,fwd:true},res:()=>BG.room+cap('Noch weiter')+AYLA({x:230,y:290,mood:'neutral',hold:'phone'})+[440,560,680].map((x,i)=>phone(x-50,140+i*20,110,170,chat([{who:'ayla',sticker:true,fwd:true}],{title:'👥'}))).join('')+tag(560,90,'📤 +3','#fde3e3'),next:'di4'},
          {ic:'🚫',w:'Nicht weiter',eff:{},res:()=>BG.room+cap('Bleibt bei mir')+AYLA({x:230,y:290,mood:'neutral',hold:'phone'})+`<svg x="470" y="110" width="220" height="220" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`+emo('🚫',580,220,230),next:'di4'},
-         {ic:'💬',w:'„Alles okay?“',eff:{noah:2,hilf:1},res:()=>BG.room+cap('Ayla fragt nach')+AYLA({x:230,y:290,mood:'smile',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Alles okay? 💛'},{who:'noah',t:'Nein 😢',mood:'sad'},{who:'ayla',me:true,t:'Ich bin da 🤝'}]),next:'di4'}]},
- di4:{type:'scene',draw:()=>BG.night+cap('Noah liest alles')+NOAH({x:250,y:290,hold:'phone'})+CHATBIG([...C2,{who:'finn',sticker:true,fwd:true},{who:'tom',t:'😂😂'}])+think(40,90,'Alle?',200,215),next:'di5'},
+         {ic:'💬',w:'„Alles okay?“',eff:{noah:2,hilf:1,dm:true},res:()=>BG.room+cap('Ayla fragt nach')+AYLA({x:230,y:290,mood:'smile',hold:'phone'})+meChat([{who:'ayla',me:true,t:'Alles okay? 💛'},{who:'noah',t:'Nein 😢',mood:'sad'},{who:'ayla',me:true,t:'Ich bin da 🤝'}]),next:'di4'}]},
+ di4:{type:'scene',draw:()=>BG.night+cap('Noah liest alles')+NOAH({x:250,y:290,hold:'phone'})+CHATBIG([...C2,{who:'finn',sticker:true,fwd:true},ST.fwd?{who:'ayla',sticker:true,fwd:true}:{who:'tom',t:'😂😂'},...(ST.dm?[{who:'ayla',t:'Ich bin da 💛'}]:[])])
+   +(ST.fwd?think(40,90,'Ayla auch? 😢',220,215):ST.dm?think(40,90,'Ayla 💛',200,215):think(40,90,'Alle?',200,215)),next:'di5'},
  di5:{type:'decide',who:'noah',draw:()=>BG.night+cap('Was macht Noah?')+NOAH({x:250,y:290,hold:'phone'})+CHATBIG([...C2,{who:'finn',sticker:true,fwd:true}]),
   cards:[{ic:'😡',w:'Zurückschreiben',eff:{noah:-2,lach:1},res:()=>BG.night+cap('Noch schlimmer')+NOAH({x:250,y:290,mood:'cry',hold:'phone'})+CHATBIG([{who:'ben',sticker:true},{who:'noah',me:true,t:'😡😡😡'},{who:'ben',t:'😂😂'},{who:'leo',t:'🐷'}]),next:'d2'},
          {ic:'🚪',w:'Chat verlassen',eff:{noah:-2},res:()=>BG.night+cap('Der Sticker bleibt')+NOAH({x:250,y:290,mood:'sad'})+CHATBIG([...C2,{sys:'🚪 Noah ist weg'},{who:'ben',t:'😂'}]),next:'d2'},
@@ -431,22 +434,22 @@ const S={
  mi4:{type:'feel',who:'ayla',draw:()=>BG.room+cap('Wie fühlt sich Ayla?')+AYLA({x:400,y:290,mood:aylaMood()}),next:'d3'},
 
  d3:{type:'day',day:3,next:'do1'},
- do1:{type:'scene',auto:{noah:-1},draw:()=>pause()+cap('Pause')+say(470,60,'Guck mal! 😂',560,170),next:'do2'},
+ do1:{type:'scene',auto:()=>ST.teacher?{}:{noah:-1},draw:()=>ST.teacher?pause().replace(/<g transform="translate\(590 270\)[^]*$/,'')+BEN({x:590,y:270,s:.7,mood:'unsure'})+TEACH({x:720,y:250,s:.75,mood:'neutral',flip:true})+say(460,50,'Handy weg, Ben!',620,150)+cap('Die Lehrerin passt auf'):pause()+cap('Pause')+say(470,60,'Guck mal! 😂',560,170),next:'do2'},
  do2:{type:'sort',title:'Wer fühlt was?',items:()=>[
     {av:headIcon('noah','sad'),tx:'Noah',k:'t'},{av:headIcon('ben','cheeky'),tx:'Ben',k:'l'},
     {av:headIcon('mia','unsure'),tx:'Mia',k:'u'},{av:headIcon('leo','cheeky'),tx:'Leo',k:'lu'}],
    opts:[{ic:'😢',k:'t',l:'traurig'},{ic:'😂',k:'l',l:'lacht'},{ic:'😟',k:'u',l:'unsicher'}],next:'do3'},
  do3:{type:'decide',who:'ayla',draw:()=>pause()+AYLA({x:400,y:400,s:.6,mood:'unsure'})+cap('Wohin geht Ayla?'),
   cards:[{ic:'😂📱',w:'Dazugehen',eff:{noah:-4,lach:1},res:()=>BG.yard+bench+NOAH({x:220,y:300,s:.7,mood:'cry'})+BEN({x:500,y:270,s:.7,mood:'cheeky',hold:'phone'})+AYLA({x:620,y:270,s:.7,mood:'cheeky',flip:true})+LEO({x:730,y:270,s:.7,mood:'cheeky',flip:true})+cap('Noah ist allein'),next:'d4'},
-         {ic:'🚶‍♀️',w:'Zu Noah',eff:{noah:2,hilf:1},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'smile'})+AYLA({x:380,y:270,s:.75,mood:'happy',flip:true})+say(260,70,'Fußball? ⚽',360,170)+cap('Ayla setzt sich dazu'),next:'do4'},
-         {ic:'🤝',w:'Mit Mia zu Noah',eff:{noah:3,hilf:2,ay:1},res:()=>BG.yard+bench+NOAH({x:250,y:270,s:.75,mood:'happy'})+AYLA({x:410,y:270,s:.75,mood:'happy',flip:true})+MIA({x:560,y:270,s:.75,mood:'happy',flip:true})+tag(400,470,'Zusammen 🤝','#e6f4e2')+cap('Zu dritt'),next:'do4'}]},
+         {ic:'🚶‍♀️',w:'Zu Noah',eff:{noah:2,hilf:1},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'smile'})+AYLA({x:380,y:270,s:.75,mood:'happy',flip:true})+say(260,70,'Fußball? ⚽',360,170)+cap('Ayla setzt sich dazu'),next:()=>ST.teacher?'d4':'do4'},
+         {ic:'🤝',w:'Mit Mia zu Noah',eff:{noah:3,hilf:2,ay:1},res:()=>BG.yard+bench+NOAH({x:250,y:270,s:.75,mood:'happy'})+AYLA({x:410,y:270,s:.75,mood:'happy',flip:true})+MIA({x:560,y:270,s:.75,mood:'happy',flip:true})+tag(400,470,'Zusammen 🤝','#e6f4e2')+cap('Zu dritt'),next:()=>ST.teacher?'d4':'do4'}]},
  do4:{type:'decide',who:'ayla',draw:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'unsure'})+AYLA({x:380,y:270,s:.75,mood:'unsure',flip:true})+BEN({x:640,y:270,s:.8,mood:'cheeky',flip:true,hold:'phone'})+roll(560,110)+cap('Ben kommt'),
   cards:[{ic:'🚶‍♀️',w:'Weggehen',eff:{noah:-2},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'sad'})+BEN({x:480,y:270,s:.8,mood:'cheeky',flip:true,hold:'phone'})+AYLA({x:740,y:270,s:.55,mood:'neutral'})+cap('Noah bleibt mit Ben'),next:'d4'},
          {ic:'✋',w:'„Lass ihn!“',eff:{noah:1,lach:1,mut:true},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'unsure'})+AYLA({x:400,y:270,s:.75,mood:'sad',flip:true})+say(270,80,'Lass ihn! ✋',380,175)+BEN({x:640,y:270,s:.8,mood:'cheeky',flip:true})+LEO({x:750,y:290,s:.6,mood:'cheeky',flip:true})+rollers(['ben','leo','tom'],540,86)+cap('🙄 🙄 🙄')+tag(400,470,'Mut 💪','#e6f4e2'),next:'d4'},
          {ic:'👩‍🏫',w:'Lehrerin holen',eff:{noah:2,hilf:2,teacher:true,ay:1},res:()=>BG.yard+bench+NOAH({x:220,y:270,s:.75,mood:'smile'})+AYLA({x:380,y:270,s:.75,mood:'smile',flip:true})+TEACH({x:560,y:230,s:.9,mood:'neutral',flip:true})+BEN({x:720,y:280,s:.7,mood:'unsure',flip:true})+say(440,40,'Stopp, Ben!',520,130)+cap('Hilfe holen'),next:'d4'}]},
 
  d4:{type:'day',day:4,next:'fr1'},
- fr1:{type:'scene',auto:{noah:-1},draw:()=>BG.room+bed+headAt('noah',70,190,140,'sad')+MOM({x:600,y:230,mood:'unsure',flip:true})+say(420,40,'Schule? 🏫',580,130)+think(180,60,'Nein! 🤢',150,200)+cap('Bauchweh'),next:'fr2'},
+ fr1:{type:'scene',auto:()=>ST.mom?{noah:-1,teacher:true}:{noah:-1},draw:()=>ST.mom?BG.room+bed+headAt('noah',70,190,140,'unsure')+MOM({x:600,y:230,mood:'smile',flip:true,hold:'phone'})+say(440,40,'Lehrerin anrufen! 📞',600,130,{fs:24})+think(180,60,'Bauchweh 🤢',150,200)+cap('Mama hilft weiter'):BG.room+bed+headAt('noah',70,190,140,'sad')+MOM({x:600,y:230,mood:'unsure',flip:true})+say(420,40,'Schule? 🏫',580,130)+think(180,60,'Nein! 🤢',150,200)+cap('Bauchweh'),next:()=>ST.mom?'fr3':'fr2'},
  fr2:{type:'decide',who:'noah',draw:()=>S.fr1.draw().replace(cap('Bauchweh'),cap('Was sagt Noah?')),
   cards:[{ic:'🤐',w:'Nichts sagen',eff:{noah:-4},res:()=>BG.room+bed+headAt('noah',70,190,140,'cry')+emo('🤐',260,200,60)+cap('Niemand weiß es'),next:'fr3'},
          {ic:'📱👩',w:'Mama zeigen',eff:{noah:2,mom:true},res:()=>BG.room+MOM({x:560,y:230,mood:'smile',flip:true})+NOAH({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,'Wir helfen dir!',560,140)+cap('Mama weiß es'),next:'fr3'},
@@ -461,14 +464,14 @@ const S={
  sa1:{type:'scene',draw:()=>BG.field+BEN({x:300,y:270,s:.8,mood:'unsure'})+LEO({x:470,y:270,s:.8,mood:'smile',flip:true})+ball(400,450)+`<rect x="580" y="250" width="110" height="200" rx="20" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="12 10"/>`+emo('❓',635,350,60)+think(80,70,'Wo ist Noah?',260,180)+cap('Fußball'),next:'sa2'},
  sa2:{type:'decide',who:'ben',draw:()=>S.sa1.draw().replace(cap('Fußball'),cap('Was macht Ben?')),
   cards:[{ic:'📤🐷',w:'Weitermachen',eff:{noah:-4,lach:1,share:2},res:()=>BG.field+BEN({x:250,y:290,mood:'cheeky',hold:'phone'})+CHATBIG([{who:'ben',me:true,sticker:true},{who:'tom',t:'😂'}])+cap('Noch ein Sticker'),next:'d6'},
-         {ic:'🗑️',w:'Sticker löschen',eff:{noah:1},res:()=>BG.field+BEN({x:250,y:290,mood:'neutral',hold:'phone'})+`<svg x="470" y="120" width="180" height="180" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`+emo('➡️',560,330,50)+emo('🗑️',560,420,80)+cap('Gelöscht'),next:'d6'},
+         {ic:'🗑️',w:'Sticker löschen',eff:{noah:1,deleted:true},res:()=>BG.field+BEN({x:250,y:290,mood:'neutral',hold:'phone'})+`<svg x="470" y="120" width="180" height="180" viewBox="-20 -20 200 200">${pig(0,10,160)}</svg>`+emo('➡️',560,330,50)+emo('🗑️',560,420,80)+cap('Gelöscht'),next:'d6'},
          {ic:'🙏',w:'Entschuldigen',eff:{noah:3,hilf:1,sorry:true},res:()=>BG.field+BEN({x:250,y:290,mood:'smile',hold:'phone'})+CHATBIG([{who:'ben',me:true,t:'Sorry, Noah! 🙏'},{who:'noah',t:'🙂 Okay'}],{title:'💬 Noah',col:'#2f5fa8'})+cap('Ben sagt Sorry'),next:'d6'}]},
 
  d6:{type:'day',day:6,next:'so1'},
- so1:{type:'scene',auto:{noah:-1},draw:()=>BG.night+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG([{who:'tom',sticker:true,fwd:true},{who:'finn',t:'😂'}])+cap('Schon wieder!'),next:'so2'},
- so2:{type:'decide',who:'ayla',draw:()=>S.so1.draw().replace(cap('Schon wieder!'),cap('Was macht Ayla?')),
+ so1:{type:'scene',auto:{noah:-1},draw:()=>BG.night+AYLA({x:230,y:290,mood:'unsure',hold:'phone'})+CHATBIG([{who:'tom',sticker:true,fwd:true},ST.sorry?{who:'ben',t:'Stopp! 🗑️'}:{who:'finn',t:'😂'}])+(ST.sorry?headAt('ben',40,96,90,'unsure')+emo('🛑',150,160,40):'')+cap(soCap()),next:'so2'},
+ so2:{type:'decide',who:'ayla',draw:()=>S.so1.draw().replace(cap(soCap()),cap('Was macht Ayla?')),
   cards:[{ic:'🙈',w:'Nichts tun',eff:{noah:-2,lach:1},res:()=>BG.night+AYLA({x:230,y:290,mood:'neutral'})+emo('🙈',360,200,64)+CHATBIG([{who:'tom',sticker:true},{who:'finn',t:'😂'},{who:'leo',t:'😂😂'}])+cap('Es geht weiter'),next:'end'},
-         {ic:'🛑',w:'„Stopp!“',eff:()=>ST.teacher?{noah:3,hilf:3,ay:1}:{noah:1,lach:1,mut:true},res:()=>ST.teacher?
+         {ic:'🛑',w:'„Stopp!“',eff:()=>ST.teacher||ST.sorry?{noah:3,hilf:3,ay:1}:{noah:1,lach:1,mut:true},res:()=>ST.teacher||ST.sorry?
             BG.night+AYLA({x:230,y:290,mood:'happy',hold:'phone'})+CHATBIG([{who:'tom',sticker:true},{who:'ayla',me:true,t:'Stopp! 🛑'},{who:'mia',t:'Stopp! 👍'},{who:'leo',t:'👍'},{who:'ella',t:'🛑'}])+cap('Alle machen mit')
            :BG.night+rollers(['tom','leo','finn'],24,86)+AYLA({x:230,y:290,mood:'sad',hold:'phone'})+emo('😟',330,200,50)+CHATBIG([{who:'ayla',me:true,t:'Stopp! 🛑'},{who:'tom',t:'🙄'},{who:'leo',t:'🙄😂'},{who:'finn',t:'🙄'}])+cap('🙄 🙄 🙄')+tag(230,470,'Mut 💪','#e6f4e2'),next:'end'},
          {ic:'👩👩‍🏫',w:'Erwachsene holen',eff:{noah:2,hilf:2,teacher:true,ay:1},res:()=>BG.room+MOM({x:560,y:230,mood:'smile',flip:true})+AYLA({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,'Morgen zur Lehrerin!',560,140,{fs:24})+cap('Mama hilft'),next:'end'}]},
@@ -479,6 +482,7 @@ const S={
    return BG.night+NOAH({x:300,y:290,mood:'cry',hold:'phone'})+`<rect x="470" y="240" width="210" height="76" rx="38" fill="#fff"/>`+emo('📤',515,278,40)+`<text x="550" y="280" font-size="40" font-weight="900" fill="#d9384a" dominant-baseline="central" ${FONT}>${ST.share}</text>`+cap('Noah ist allein')+emo('🌧️',735,60,80);},next:'review'},
  review:{type:'review'}
 };
+const soCap=()=>ST.deleted&&!ST.sorry?'Tom hat ihn noch!':ST.sorry?'Ben sagt Stopp!':'Schon wieder!'; // what Saturday changed
 function rollers(list,x,y){return list.map((w,i)=>headAt(w,x+i*78,y,70,'cheeky')+emo('🙄',x+i*78+58,y+58,34)).join('');} // classmates rolling their eyes at Ayla
 function teacherHelp(t){return BG.school+TEACH({x:560,y:230,mood:'smile',flip:true})+AYLA({x:260,y:300,mood:'smile',hold:'phone'})+say(400,40,t,560,140)+cap('Hilfe holen');}
 function pause(){return BG.yard+bench+NOAH({x:220,y:300,s:.7,mood:'sad'})+kid({who:'tom',x:470,y:270,s:.7,mood:'cheeky'})+BEN({x:590,y:270,s:.7,mood:'cheeky',hold:'phone'})+LEO({x:710,y:270,s:.7,mood:'cheeky',flip:true});}
@@ -515,7 +519,7 @@ function enter(b){const s=S[cur];
   if(s.type==='day'){ if(s.day>0) ST.log[s.day-1]=snap(); ST.day=s.day;
     // a new day: while three or more classmates still laugh along, the sticker keeps hurting
     if(s.day>0&&laughers()>=3){ST.noah=clamp(ST.noah-1,0,20);last={at:cur,d:delta(b)};} }
-  if(s.auto){apply(s.auto);last={at:cur,d:delta(b)};}
+  if(s.auto){apply(val(s.auto));last={at:cur,d:delta(b)};}
   if(s.ending) ST.log[6]=snap();
 }
 function choose(c,k){
@@ -529,7 +533,7 @@ function choose(c,k){
 function navBar(nextId,middle){
   const n=document.createElement('div');n.className='nav';
   const b=document.createElement('button');b.className='arrow back';b.textContent='◀';b.setAttribute('aria-label','Zurück');b.disabled=!hist.length;b.onclick=back;
-  const f=document.createElement('button');f.className='arrow';f.textContent='▶';f.setAttribute('aria-label','Weiter');if(nextId)f.onclick=()=>go(nextId);else f.disabled=true;
+  const f=document.createElement('button');f.className='arrow';f.textContent='▶';f.setAttribute('aria-label','Weiter');if(nextId)f.onclick=()=>go(val(nextId));else f.disabled=true;
   let m=middle; if(!m){m=document.createElement('button');m.className='restart';m.textContent='⟲';m.setAttribute('aria-label','Von vorn');m.onclick=restart;}
   n.append(b,m,f);return n;
 }
@@ -550,7 +554,7 @@ function render(){
   const s=S[cur], st=$('stage'), bt=$('bottom');
   st.innerHTML='';bt.innerHTML='';drawTop(s);
   if(s.type==='start'){
-    st.innerHTML=`<div class="startbox"><svg viewBox="0 0 800 330">${BG.room.replace('height="500"','height="330"')}${AYLA({x:230,y:180,s:.8,mood:'happy'})}${NOAH({x:400,y:180,s:.8,mood:'happy'})}${BEN({x:570,y:180,s:.8,mood:'cheeky',flip:true})}</svg><h1>Der Sticker</h1><div class="pair" aria-label="Zu zweit spielen">🧒🧒 📱</div><p class="small">Für die Lehrkraft: Eine Woche im Klassenchat, 9 bis 11 Entscheidungen und 3 Aufgaben. Partnerarbeit: ein iPad pro Paar. Das Gesicht oben zeigt, aus wessen Sicht das Paar entscheidet (meist Ayla, zweimal Noah, einmal Ben). Oben sieht man, wie es Noah geht, was die Klasse macht (rot: lacht mit, grün: hilft) und wie oft der Sticker weitergeschickt wurde. Lachen morgens noch drei oder mehr mit, sinkt Noahs Balken (🌥️). Aylas Gesicht oben zeigt, wie es ihr geht; 🙄 zählt, wie oft sie für mutiges Helfen ausgelacht wurde. Hilfe von anderen oder von Erwachsenen macht sie wieder froh. Das Spiel speichert nichts.</p></div>`;
+    st.innerHTML=`<div class="startbox"><svg viewBox="0 0 800 330">${BG.room.replace('height="500"','height="330"')}${AYLA({x:230,y:180,s:.8,mood:'happy'})}${NOAH({x:400,y:180,s:.8,mood:'happy'})}${BEN({x:570,y:180,s:.8,mood:'cheeky',flip:true})}</svg><h1>Der Sticker</h1><div class="pair" aria-label="Zu zweit spielen">🧒🧒 📱</div><p class="small">Für die Lehrkraft: Eine Woche im Klassenchat, 8 bis 11 Entscheidungen und 3 Aufgaben. Die Geschichte verzweigt: Was die Kinder entscheiden, verändert die nächsten Szenen. Partnerarbeit: ein iPad pro Paar. Das Gesicht oben zeigt, aus wessen Sicht das Paar entscheidet (meist Ayla, ein- oder zweimal Noah, einmal Ben). Oben sieht man, wie es Noah geht, was die Klasse macht (rot: lacht mit, grün: hilft) und wie oft der Sticker weitergeschickt wurde. Lachen morgens noch drei oder mehr mit, sinkt Noahs Balken (🌥️). Aylas Gesicht oben zeigt, wie es ihr geht; 🙄 zählt, wie oft sie für mutiges Helfen ausgelacht wurde. Hilfe von anderen oder von Erwachsenen macht sie wieder froh. Das Spiel speichert nichts.</p></div>`;
     const p=document.createElement('button');p.className='arrow';p.style.width='140px';p.textContent='▶';p.setAttribute('aria-label','Start');p.onclick=()=>go('d0');bt.appendChild(p);return;}
   if(s.type==='day'){
     const hurt=last&&last.at===cur; // the sticker still hurts today
@@ -562,7 +566,7 @@ function render(){
     st.innerHTML=scene(s.draw());
     const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;bk.disabled=!hist.length;
     const c=document.createElement('div');c.className='cards';
-    s.cards.forEach((cd,k)=>{const b=document.createElement('button');b.className='card';b.innerHTML=`<span class="ic" aria-hidden="true">${cd.ic}</span><span class="w">${cd.w}</span>`;b.onclick=()=>choose(cd,k);c.appendChild(b);});
+    val(s.cards).forEach((cd,k)=>{const b=document.createElement('button');b.className='card';b.innerHTML=`<span class="ic" aria-hidden="true">${cd.ic}</span><span class="w">${cd.w}</span>`;b.onclick=()=>choose(cd,k);c.appendChild(b);});
     bt.append(bk,c);return;}
   if(s.type==='melden'){
     let open=false;const found=new Set();
@@ -601,7 +605,7 @@ function render(){
     const bk=document.createElement('button');bk.className='arrow back';bk.textContent='◀';bk.setAttribute('aria-label','Zurück');bk.onclick=back;
     c.appendChild(r);bt.append(bk,c);return;}
 }
-document.addEventListener('keydown',e=>{const s=S[cur];if(e.key==='ArrowRight'&&s.next&&s.type!=='decide')go(s.next);if(e.key==='ArrowLeft')back();});
+document.addEventListener('keydown',e=>{const s=S[cur];if(e.key==='ArrowRight'&&s.next&&s.type!=='decide')go(val(s.next));if(e.key==='ArrowLeft')back();});
 render();
 
 </script>
